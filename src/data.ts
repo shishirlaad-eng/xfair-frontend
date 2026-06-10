@@ -2,6 +2,15 @@ import { UpcomingEvent, Registration } from './types';
 
 export const INITIAL_UPCOMING_EVENTS: UpcomingEvent[] = [
   {
+    id: 'ue-5',
+    title: 'Bauma 2028 - Employee Registration 2028',
+    dateRange: '13/03/2028 - 19/03/2028',
+    location: 'Unterschleissheim, Germany',
+    hasLogo: false,
+    logoText: 'B28',
+    category: 'Employee Registration'
+  },
+  {
     id: 'ue-1',
     title: 'Dublin Tech Summit 2026',
     dateRange: '17/06/2026 - 18/06/2026',
@@ -55,24 +64,6 @@ export const INITIAL_REGISTRATIONS: Registration[] = [
     imageUrl: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=650&q=80'
   },
   {
-    id: 'reg-b3',
-    title: 'Money20/20 Amsterdam 2026',
-    dateRange: '02/06/2026 - 04/06/2026',
-    location: 'Amsterdam, Netherlands',
-    status: 'incomplete',
-    isTest: true,
-    imageUrl: 'https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=650&q=80'
-  },
-  {
-    id: 'reg-b4',
-    title: 'ESAIC 2026',
-    dateRange: '06/06/2026 - 08/06/2026',
-    location: 'Munich, Germany',
-    status: 'not_registered',
-    isTest: false
-    // No imageUrl because it is optional
-  },
-  {
     id: 'reg-1',
     title: 'Bauma 2022 - Criteria Dependancies Registration',
     location: 'München, Germany',
@@ -89,15 +80,6 @@ export const INITIAL_REGISTRATIONS: Registration[] = [
     imageUrl: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80'
   },
   {
-    id: 'reg-3',
-    title: 'bauma Munich 2026 – Caterpillar Europe - New Registration:-Employee',
-    dateRange: '21/03/2026 - 17/04/2026',
-    location: 'München, Germany',
-    status: 'incomplete',
-    isTest: true,
-    imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80'
-  },
-  {
     id: 'reg-4',
     title: 'SP Event 2026 - SP Employee Registration',
     dateRange: '26/03/2026 - 31/03/2026',
@@ -105,5 +87,15 @@ export const INITIAL_REGISTRATIONS: Registration[] = [
     customText: 'SP Employee Registration',
     status: 'incomplete',
     isTest: true
+  },
+  {
+    id: 'reg-bauma2028',
+    title: 'Bauma 2028 - Employee Registration 2028',
+    dateRange: '13/03/2028 - 19/03/2028',
+    location: 'Unterschleissheim, Germany',
+    customText: 'Employee Registration',
+    status: 'not_registered',
+    isTest: true,
+    imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80'
   }
 ];

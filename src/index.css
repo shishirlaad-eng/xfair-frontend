@@ -21,7 +21,7 @@
 
 @layer base {
   body {
-    @apply font-sans bg-[#FAFAFC] text-navy-slate antialiased selection:bg-orange-600 selection:text-white;
+    @apply font-sans bg-transparent text-navy-slate antialiased selection:bg-orange-600 selection:text-white;
   }
 }
 

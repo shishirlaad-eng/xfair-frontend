@@ -1,13 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, ChevronDown, Check, Shield, Info } from 'lucide-react';
+import { Language } from '../types';
+import { TRANSLATIONS } from '../translations';
 
 interface CreateAccountScreenProps {
+  language: Language;
   onBackToLogin: () => void;
   onSuccess: (email: string, firstName: string, lastName: string) => void;
   onSuccessDirect?: () => void;
 }
 
-export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect }: CreateAccountScreenProps) {
+export function CreateAccountScreen({ language, onBackToLogin, onSuccess, onSuccessDirect }: CreateAccountScreenProps) {
   // Field States
   const [userType, setUserType] = useState('Employee');
   const [termsAgreed, setTermsAgreed] = useState(false);
@@ -34,6 +37,23 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
   // Dropdown reference for closing outside
   const typeDropdownRef = useRef<HTMLDivElement>(null);
 
+  const t = TRANSLATIONS[language];
+
+  // Map userType strings into German equivalents in local display if needed, but keep core data model clean
+  const getLocalizedUserType = (type: string) => {
+    if (language === 'de') {
+      switch (type) {
+        case 'Employee': return 'Mitarbeiter';
+        case 'Survey': return 'Befragung';
+        case 'Visitor': return 'Besucher';
+        case 'Visitor Report': return 'Besuchsbericht';
+        case 'Event Group': return 'Veranstaltungsgruppe';
+        default: return type;
+      }
+    }
+    return type;
+  };
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (typeDropdownRef.current && !typeDropdownRef.current.contains(event.target as Node)) {
@@ -48,37 +68,37 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
-    // Validate inputs
-    if (!firstName.trim()) newErrors.firstName = "First name is required.";
-    if (!lastName.trim()) newErrors.lastName = "Last name is required.";
+    // Validate inputs using localized errors
+    if (!firstName.trim()) newErrors.firstName = t.createAccount.errFirstName;
+    if (!lastName.trim()) newErrors.lastName = t.createAccount.errLastName;
     
     if (!email) {
-      newErrors.email = "Email is required.";
+      newErrors.email = t.createAccount.errEmailRequired;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Please enter a valid email address.";
+      newErrors.email = t.createAccount.errEmailInvalid;
     }
 
     if (email !== repeatEmail) {
-      newErrors.repeatEmail = "Email addresses do not match.";
+      newErrors.repeatEmail = t.createAccount.errEmailMismatch;
     }
 
     if (password.length < 12) {
-      newErrors.password = "Password must be at least 12 characters.";
+      newErrors.password = t.createAccount.errPasswordLength;
     }
 
     if (password !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match.";
+      newErrors.confirmPassword = t.createAccount.errPasswordMismatch;
     }
 
     if (captchaInput !== ACTUAL_CAPTCHA) {
-      newErrors.captcha = "The captcha code is incorrect.";
+      newErrors.captcha = t.createAccount.errCaptchaIncorrect;
     }
 
     if (!termsAgreed) {
-      newErrors.terms = "Terms agreement is required.";
+      newErrors.terms = t.createAccount.errTermsRequired;
     }
     if (!privacyAgreed) {
-      newErrors.privacy = "Privacy agreement is required.";
+      newErrors.privacy = t.createAccount.errPrivacyRequired;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -98,34 +118,30 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
   };
 
   return (
-    <div className="w-full min-h-[calc(100vh-72px)] bg-[#FAFAFC] py-12 px-4 flex flex-col justify-center items-center select-none animate-fade-in animate-duration-300">
+    <div className="w-full flex-1 bg-transparent py-6 sm:py-8 px-4 flex flex-col justify-center items-center select-none animate-fade-in animate-duration-300">
       <div className="w-full max-w-4xl bg-white border border-[#E2E8F0] rounded-[24px] shadow-premium overflow-hidden flex flex-col md:flex-row md:items-stretch">
         
         {/* Left Side: Layout Sidebar panel inspired by mockup with clear opacity brand tone (#f89728 opacity-10) */}
         <div 
-          className="md:w-[320px] p-8 sm:p-10 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#E2E8F0] select-none shrink-0 text-left relative overflow-hidden" 
-          style={{ backgroundColor: 'rgba(248, 151, 40, 0.1)' }}
+          className="md:w-[320px] p-8 sm:p-10 flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#E2E8F0]/40 select-none shrink-0 text-left relative overflow-hidden" 
+          style={{ backgroundColor: 'rgba(248, 151, 40, 0.08)' }}
         >
           <div className="relative z-10 flex flex-col h-full justify-between">
             <div>
               {/* Title & Decorative bar */}
               <h2 className="text-[#0F172A] font-extrabold text-2xl sm:text-3xl leading-snug font-sans tracking-tight mt-4">
-                Create Account
+                {t.createAccount.title}
               </h2>
               <div className="w-8 h-1 bg-[#f89728] rounded-full mt-4" />
 
               {/* Description guidelines */}
               <p className="text-[#4A5D7E] text-xs sm:text-[13px] leading-relaxed font-sans font-medium mt-6">
-                After providing the required information (<span className="text-[#f89728] font-bold">*</span>) and submitting, an activation link will be sent to your email address to set up your credentials safely.
+                {t.createAccount.desc}
               </p>
             </div>
 
-            {/* Bottom branding footer */}
-            <div className="mt-8 md:mt-12 select-none self-start">
-              <span className="text-[10px] uppercase font-mono font-black tracking-[0.2em] text-[#f89728] bg-white/70 border border-[#f89728]/15 px-3 py-1 rounded shadow-3xs">
-                Xfair GmbH
-              </span>
-            </div>
+            {/* Bottom space */}
+            <div className="mt-8 md:mt-12" />
           </div>
         </div>
 
@@ -138,16 +154,16 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
               </div>
               <div className="space-y-1.5">
                 <h3 className="text-lg font-bold text-slate-900 font-sans">
-                  Activation Link Dispatched
+                  {t.createAccount.successTitle}
                 </h3>
                 <p className="text-slate-500 text-xs max-w-sm leading-relaxed font-sans font-medium mb-1">
-                  We have dispatched an activation link to <span className="font-mono text-[#f89728] font-bold">{email}</span>. Please review your email inbox to activate your profile.
+                  {t.createAccount.successDesc}<span className="font-mono text-[#f89728] font-bold">{email}</span>. Please review your email inbox to activate your profile.
                 </p>
               </div>
               <div className="bg-slate-50 border border-slate-100 text-slate-500 font-mono text-[10px] p-4 rounded-xl max-w-xs space-y-1 text-left w-full shadow-3xs">
-                <p><strong>Registry Status:</strong> Awaiting Activation</p>
-                <p><strong>Activation Code:</strong> xfair-act-77196232</p>
-                <p><strong>Assigned User Type:</strong> {userType}</p>
+                <p><strong>{t.createAccount.registryStatus}</strong> {t.createAccount.registryStatusValue}</p>
+                <p><strong>{t.createAccount.activationCode}</strong> xfair-act-77196232</p>
+                <p><strong>{t.createAccount.assignedType}</strong> {getLocalizedUserType(userType)}</p>
               </div>
               <button
                 type="button"
@@ -155,7 +171,7 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                 className="px-5 py-2.5 bg-white border border-zinc-250 text-zinc-650 text-xs font-bold rounded-lg transition-all flex items-center gap-2 select-none hover:bg-zinc-50 hover:border-zinc-350 cursor-pointer active:scale-[0.98]"
               >
                 <ArrowLeft size={14} className="stroke-[2.5]" />
-                Return to Login
+                {t.createAccount.returnToLoginBtn}
               </button>
             </div>
           ) : (
@@ -165,18 +181,18 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
                 <div className="space-y-1.5 group relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    First name <span className="text-red-500">*</span>
+                    {t.createAccount.firstNameLabel} <span className="text-red-500">*</span>
                   </label>
                   <input 
                     type="text" 
-                    placeholder="Enter first name"
+                    placeholder={t.createAccount.firstNamePlaceholder}
                     value={firstName}
                     onChange={(e) => {
                       setFirstName(e.target.value);
                       if (errors.firstName) setErrors(prev => { const { firstName, ...rest } = prev; return rest; });
                     }}
                     required
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
                   />
                   {errors.firstName && (
                     <p className="text-[11px] font-semibold text-rose-500 mt-1 font-sans">{errors.firstName}</p>
@@ -185,18 +201,18 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
 
                 <div className="space-y-1.5 group relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Last name <span className="text-red-500">*</span>
+                    {t.createAccount.lastNameLabel} <span className="text-red-500">*</span>
                   </label>
                   <input 
                     type="text" 
-                    placeholder="Enter last name"
+                    placeholder={t.createAccount.lastNamePlaceholder}
                     value={lastName}
                     onChange={(e) => {
                       setLastName(e.target.value);
                       if (errors.lastName) setErrors(prev => { const { lastName, ...rest } = prev; return rest; });
                     }}
                     required
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
                   />
                   {errors.lastName && (
                     <p className="text-[11px] font-semibold text-rose-500 mt-1 font-sans">{errors.lastName}</p>
@@ -208,18 +224,18 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
                 <div className="space-y-1.5 group relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Your email address <span className="text-red-500">*</span>
+                    {t.createAccount.emailLabel} <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    type="email" 
-                    placeholder="Enter email"
+                    type="type" 
+                    placeholder={t.createAccount.emailPlaceholder}
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
                       if (errors.email) setErrors(prev => { const { email, ...rest } = prev; return rest; });
                     }}
                     required
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
                   />
                   {errors.email && (
                     <p className="text-[11px] font-semibold text-rose-500 mt-1 font-sans">{errors.email}</p>
@@ -228,18 +244,18 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
 
                 <div className="space-y-1.5 group relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Repeat email <span className="text-red-500">*</span>
+                    {t.createAccount.repeatEmailLabel} <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    type="email" 
-                    placeholder="Repeat email"
+                    type="type" 
+                    placeholder={t.createAccount.repeatEmailPlaceholder}
                     value={repeatEmail}
                     onChange={(e) => {
                       setRepeatEmail(e.target.value);
                       if (errors.repeatEmail) setErrors(prev => { const { repeatEmail, ...rest } = prev; return rest; });
                     }}
                     required
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
                   />
                   {errors.repeatEmail && (
                     <p className="text-[11px] font-semibold text-rose-500 mt-1 font-sans">{errors.repeatEmail}</p>
@@ -252,7 +268,7 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                 <div className="space-y-1.5 group relative">
                   <div className="flex items-center gap-1.5 relative">
                     <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                      Password <span className="text-red-500">*</span>
+                      {t.createAccount.passwordLabel} <span className="text-red-500">*</span>
                     </label>
                     <button
                       type="button"
@@ -260,33 +276,33 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                       onMouseLeave={() => setShowPasswordRules(false)}
                       onClick={() => setShowPasswordRules(!showPasswordRules)}
                       className="text-[#f89728] hover:text-[#df7e10] transition-colors p-0.5 rounded focus:outline-none cursor-pointer"
-                      title="Password requirements"
+                      title="Requirements"
                     >
                       <Info size={13} className="stroke-[2.5]" />
                     </button>
                     {showPasswordRules && (
                       <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-slate-900 text-white text-[11px] leading-relaxed rounded-xl shadow-xl z-50 animate-fade-in pointer-events-none font-medium">
                         <div className="absolute top-full left-4 border-[6px] border-transparent border-t-slate-900" />
-                        Password must be at least 12 characters. Avoid using trivial combinations, your company name, or your email address prefix.
+                        {t.createAccount.passwordInstructions}
                       </div>
                     )}
                   </div>
-                  <div className="relative flex items-center h-11">
+                  <div className="relative flex items-center">
                     <input 
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter password"
+                      placeholder={t.createAccount.passwordPlaceholder}
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
                         if (errors.password) setErrors(prev => { const { password, ...rest } = prev; return rest; });
                       }}
                       required
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 pr-8 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
+                      className="w-full bg-white border border-zinc-200 rounded-lg pl-3 pr-10 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-0 bottom-2 text-slate-400 hover:text-[#f89728] transition-colors p-1"
+                      className="absolute right-3 text-slate-400 hover:text-[#f89728] transition-colors p-1 flex items-center justify-center"
                     >
                       {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -298,24 +314,24 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
 
                 <div className="space-y-1.5 group relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Confirm password <span className="text-red-500">*</span>
+                    {t.createAccount.confirmPasswordLabel} <span className="text-red-500">*</span>
                   </label>
-                  <div className="relative flex items-center h-11">
+                  <div className="relative flex items-center">
                     <input 
                       type={showConfirmPassword ? 'text' : 'password'}
-                      placeholder="Confirm password"
+                      placeholder={t.createAccount.confirmPasswordPlaceholder}
                       value={confirmPassword}
                       onChange={(e) => {
                         setConfirmPassword(e.target.value);
                         if (errors.confirmPassword) setErrors(prev => { const { confirmPassword, ...rest } = prev; return rest; });
                       }}
                       required
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 pr-8 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
+                      className="w-full bg-white border border-zinc-200 rounded-lg pl-3 pr-10 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-0 bottom-2 text-slate-400 hover:text-[#f89728] transition-colors p-1"
+                      className="absolute right-3 text-slate-400 hover:text-[#f89728] transition-colors p-1 flex items-center justify-center"
                     >
                       {showConfirmPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -331,14 +347,14 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                 {/* User Type */}
                 <div ref={typeDropdownRef} className="space-y-1.5 relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Type
+                    {t.createAccount.typeLabel}
                   </label>
                   <button
                     type="button"
                     onClick={() => setIsTypeDropdownOpen(!isTypeDropdownOpen)}
-                    className="w-full flex items-center justify-between bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all cursor-pointer h-11 text-left"
+                    className="w-full flex items-center justify-between bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all cursor-pointer h-11 text-left"
                   >
-                    <span>{userType}</span>
+                    <span>{getLocalizedUserType(userType)}</span>
                     <ChevronDown size={15} className={`text-zinc-400 transition-transform ${isTypeDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
 
@@ -360,7 +376,7 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                                 : 'text-slate-700 hover:bg-orange-50 hover:text-[#f89728]'
                             }`}
                           >
-                            <span>{type}</span>
+                            <span>{getLocalizedUserType(type)}</span>
                             {isSelected && <Check size={12} className="stroke-[2.5]" />}
                           </button>
                         );
@@ -372,7 +388,7 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                 {/* Captcha section */}
                 <div className="space-y-1.5">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Captcha <span className="text-red-500">*</span>
+                    {t.createAccount.captchaLabel} <span className="text-red-500">*</span>
                   </label>
                   <div className="flex gap-4 items-end">
                     {/* Captcha representation badge matching picture closely */}
@@ -384,14 +400,14 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                     <input 
                       type="text" 
                       maxLength={8}
-                      placeholder="Type captcha"
+                      placeholder={t.createAccount.captchaPlaceholder}
                       value={captchaInput}
                       onChange={(e) => {
                         setCaptchaInput(e.target.value);
                         if (errors.captcha) setErrors(prev => { const { captcha, ...rest } = prev; return rest; });
                       }}
                       required
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11 font-mono tracking-wide"
+                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11 font-mono tracking-wide"
                     />
                   </div>
                   {errors.captcha && (
@@ -403,7 +419,7 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
               {/* Data Protection Checkboxes with requested clean labels */}
               <div className="pt-4 border-t border-[#F1F5F9] space-y-3">
                 <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                  Data Protection <span className="text-red-500">*</span>
+                  {t.createAccount.dataProtectionLabel} <span className="text-red-500">*</span>
                 </label>
                 
                 <div className="space-y-3">
@@ -419,7 +435,7 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                       className="mt-0.5 accent-[#f89728] text-white w-4 h-4 cursor-pointer rounded border-[#CBD5E1]"
                     />
                     <span className="group-hover:text-[#f89728] transition-colors leading-normal font-semibold text-[#4A5D7E] hover:underline">
-                      Terms and Conditions <span className="text-red-500 font-sans">*</span>
+                      {t.createAccount.termsLabel} <span className="text-red-500 font-sans">*</span>
                     </span>
                   </label>
                   {errors.terms && (
@@ -438,7 +454,7 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                       className="mt-0.5 accent-[#f89728] text-white w-4 h-4 cursor-pointer rounded border-[#CBD5E1]"
                     />
                     <span className="group-hover:text-[#f89728] transition-colors leading-normal font-semibold text-[#4A5D7E] hover:underline">
-                      Data Privacy <span className="text-red-500 font-sans">*</span>
+                      {t.createAccount.privacyLabel} <span className="text-red-500 font-sans">*</span>
                     </span>
                   </label>
                   {errors.privacy && (
@@ -455,14 +471,14 @@ export function CreateAccountScreen({ onBackToLogin, onSuccess, onSuccessDirect 
                   className="w-full sm:w-auto px-5 py-2.5 bg-white border border-zinc-250 text-zinc-650 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 select-none hover:bg-zinc-50 hover:border-zinc-350 cursor-pointer active:scale-[0.98]"
                 >
                   <ArrowLeft size={14} className="stroke-[2.5]" />
-                  <span>Back to Login</span>
+                  <span>{t.createAccount.backBtn}</span>
                 </button>
 
                 <button
                   type="submit"
                   className="w-full sm:w-auto px-8 py-2.5 bg-[#f89728] hover:bg-[#df7e10] active:scale-[0.98] text-white text-xs font-bold rounded-lg shadow-sm hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2 select-none"
                 >
-                  <span>Create Account</span>
+                  <span>{t.createAccount.submitBtn}</span>
                   <ArrowRight size={14} className="stroke-[2.5]" />
                 </button>
               </div>

@@ -1,14 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  User, ShieldCheck, Mail, Phone, Calendar, MapPin, 
+  User, ShieldCheck, Mail, Phone, Calendar, MapPin, BookOpen,
   Upload, Trash2, ArrowLeft, ArrowRight, Check, CheckCircle2, 
   AlertTriangle, Building, Languages, HelpCircle, Hotel, Plus, 
   Download, FileText, ChevronLeft, ChevronRight, CheckSquare, Square,
   X, Info, Clock, AlertCircle, ChevronDown
 } from 'lucide-react';
 import { Registration, Language } from '../types';
+import { TRANSLATIONS } from '../translations';
 
 interface RegistrationWizardProps {
+  language: Language;
   registration: Registration;
   userName: string;
   onClose: () => void;
@@ -85,12 +87,12 @@ function CustomSelect({
   const selectedOption = options.find(o => o.value === value);
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div ref={containerRef} className={`relative w-full ${isOpen ? 'z-50' : 'z-10'}`}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between bg-transparent border-0 border-b py-2.5 text-[15px] text-zinc-900 font-semibold outline-none transition-all cursor-pointer h-11 text-left ${
-          isOpen ? 'border-[#f89728]' : 'border-zinc-200 hover:border-[#f89728]'
+        className={`w-full flex items-center justify-between bg-white border rounded-lg px-3 py-2.5 text-[15px] text-zinc-900 font-semibold outline-none transition-all cursor-pointer h-11 text-left ${
+          isOpen ? 'border-[#f89728] ring-2 ring-[#f89728]/10' : 'border-zinc-200 hover:border-[#f89728]/60'
         }`}
       >
         <span className={selectedOption ? 'text-zinc-900' : 'text-zinc-400 font-medium'}>
@@ -211,6 +213,7 @@ const formatDateDMY = (dateStr: string) => {
 };
 
 export function RegistrationWizard({
+  language,
   registration,
   userName,
   onClose,
@@ -218,23 +221,27 @@ export function RegistrationWizard({
   theme
 }: RegistrationWizardProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [activePolicy, setActivePolicy] = useState<'none' | 'imprint' | 'privacy'>('none');
   const [stepperLayout, setStepperLayout] = useState<'horizontal' | 'vertical'>('horizontal');
 
+  const t = TRANSLATIONS[language || 'en'];
+
+  const getLocalizedDayOfWeek = (dayName: string) => {
+    if (language !== 'de') return dayName;
+    const map: { [key: string]: string } = {
+      'Sunday': 'Sonntag',
+      'Monday': 'Montag',
+      'Tuesday': 'Dienstag',
+      'Wednesday': 'Mittwoch',
+      'Thursday': 'Donnerstag',
+      'Friday': 'Freitag',
+      'Saturday': 'Samstag'
+    };
+    return map[dayName] || dayName;
+  };
+
   // Define Steps
-  const steps = [
-    { title: 'Personal data', desc: 'Secure profile & regulations check' },
-    { title: 'Attendance / time', desc: 'Daily fair-day scheduler' },
-    { title: 'Meeting Rooms', desc: 'Session & floor desk planner' },
-    { title: 'Hotel request', desc: 'Accommodation coordinates' },
-    { title: 'Personal Calendar', desc: 'Custom schedules & sessions' },
-    { title: 'Accompanying person', desc: 'Guest & partner attendance' },
-    { title: 'Postcode range', desc: 'Regional scope planner' },
-    { title: 'Travel', desc: 'Transportation planning' },
-    { title: 'Orders', desc: 'Merchandise and extra tickets' },
-    { title: 'Deputies', desc: 'Assigned proxies and stand-ins' },
-    { title: 'Download Area', desc: 'Maps, layouts and guidelines' },
-    { title: 'Summary', desc: 'Final audit & dispatch' }
-  ];
+  const steps = t.wizard.steps;
 
   const [stepperStartIndex, setStepperStartIndex] = useState(0);
 
@@ -435,11 +442,11 @@ export function RegistrationWizard({
   const handleNext = () => {
     // Basic verification for step 1
     if (currentStep === 0 && !personalData.privacyAgreed) {
-      triggerToast('⚠️ You must agree to the Data Protection statement to proceed.');
+      triggerToast(t.wizard.alertPrivacy);
       return;
     }
     if (currentStep === 1) {
-      triggerToast('🔒 Further step screens are currently locked.');
+      triggerToast(t.wizard.alertLockedSteps);
       return;
     }
     if (currentStep < steps.length - 1) {
@@ -456,7 +463,7 @@ export function RegistrationWizard({
   };
 
   const handleFinish = () => {
-    triggerToast('🎉 Saving your parameters & completing registration...');
+    triggerToast(t.wizard.alertSaving);
     setTimeout(() => {
       onComplete(registration.id);
     }, 1500);
@@ -581,36 +588,37 @@ export function RegistrationWizard({
   };
 
   return (
-    <div id="registration-wizard-panel" className={`w-full py-8 sm:py-10 animate-fade-in ${
-      theme === 'option2'
-        ? 'max-w-6xl mx-auto px-4 sm:px-6 md:px-0'
-        : 'max-w-none px-4 sm:px-8 lg:px-12 xl:px-16'
-    }`}>
+    <div className="w-full flex flex-col min-h-screen bg-transparent relative">
+      <div id="registration-wizard-panel" className={`w-full flex-grow pt-1 pb-16 animate-fade-in ${
+        theme === 'option2'
+          ? 'max-w-6xl mx-auto px-4 sm:px-6 md:px-0'
+          : 'max-w-6xl mx-auto px-4 sm:px-8 lg:px-12 xl:px-16'
+      }`}>
       
-      {/* 1. Header with Title and Location Details of the Fair */}
-      <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between p-5 px-8 bg-white border border-slate-200/80 rounded-t-xl select-none">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500 font-sans w-full">
-          <h2 className="font-sans font-extrabold text-slate-800 text-[15px] tracking-tight leading-tight select-none">
+      {/* 1. Header with Title and Location Details of the Fair - Compacted */}
+      <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between py-2 px-4 sm:px-6 bg-slate-50 border border-slate-200/80 rounded-t-xl select-none">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-slate-500 font-sans w-full">
+          <h2 className="font-sans font-black text-slate-800 text-[13.5px] tracking-tight leading-tight select-none">
             {registration.title}
           </h2>
           <span className="text-zinc-300 hidden md:inline select-none">|</span>
-          <span className="flex items-center gap-1.5 font-medium text-slate-600">
-            <Calendar size={13} className="text-[#f89728]" />
+          <span className="flex items-center gap-1 font-semibold text-slate-600">
+            <Calendar size={12} className="text-[#f89728]" />
             <span>{registration.dateRange || '6/24/2026 - 7/1/2026'}</span>
           </span>
           <span className="text-zinc-300 hidden md:inline select-none">|</span>
-          <span className="flex items-center gap-1.5 font-medium text-slate-600">
-            <MapPin size={13} className="text-[#f89728]" />
+          <span className="flex items-center gap-1 font-semibold text-slate-600">
+            <MapPin size={12} className="text-[#f89728]" />
             <span>{registration.location || 'München, Germany'}</span>
           </span>
         </div>
       </div>
 
-      {/* 2. Sleek Horizontal Connected Timeline Progress Indicator */}
+      {/* 2. Sleek Horizontal Connected Timeline Progress Indicator - Compacted */}
       {stepperLayout === 'horizontal' && (
-        <div id="horizontal-stepper-view" className="bg-white p-4 md:p-6 shadow-xs relative select-none border-x border-b border-slate-200/80 rounded-b-xl flex flex-col gap-5">
+        <div id="horizontal-stepper-view" className="bg-white py-3 px-3 md:py-4 md:px-5 relative select-none border-x border-b border-slate-200/80 rounded-b-xl flex flex-col gap-2">
           {/* Main Arrow & Steppers Row */}
-          <div className="w-full flex items-start">
+          <div className="w-full flex items-center">
             
             {/* Left Arrow Button */}
             <button
@@ -624,7 +632,7 @@ export function RegistrationWizard({
               }`}
               title="Previous steps"
             >
-              <ChevronLeft size={18} className="stroke-[2.5]" />
+              <ChevronLeft size={17} className="stroke-[2.5]" />
             </button>
 
             {/* Stepper Content Wrapper */}
@@ -695,20 +703,20 @@ export function RegistrationWizard({
                 );
               })()}
 
-              {/* Column Layout based on Flexbox to prevent dead space */}
+              {/* Column Layout based on Flexbox to prevent dead space - Compacted */}
               <div className="w-full flex items-start justify-between relative z-10">
                 
-                {/* 1st: Left Ghost Peek */}
+                {/* 1st: Left Ghost Peek - Compacted */}
                 {stepperStartIndex > 0 && (() => {
                   const prevIdx = stepperStartIndex - 1;
                   const prevStep = steps[prevIdx];
                   return (
                     <div className="flex-1 flex flex-col items-center relative select-none">
                       {/* Preceding dots indicator */}
-                      <div className="absolute right-1/2 mr-6 top-[18px] -translate-y-1/2 flex gap-[3.5px] select-none pointer-events-none items-center z-30">
+                      <div className="absolute right-1/2 mr-5 top-[18px] -translate-y-1/2 flex gap-[2.5px] select-none pointer-events-none items-center z-30">
                         <span className="w-0.5 h-0.5 rounded-full bg-slate-300" />
-                        <span className="w-1 h-1 rounded-full bg-slate-300" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                        <span className="w-0.5 h-0.5 rounded-full bg-slate-300" />
+                        <span className="w-1 h-1 rounded-full bg-slate-400" />
                       </div>
 
                       <button
@@ -717,10 +725,10 @@ export function RegistrationWizard({
                         className="flex flex-col items-center relative z-20 cursor-pointer focus:outline-none select-none group w-full"
                         title={`Preview: Step ${prevIdx + 1} - ${prevStep.title}. Click to view previous.`}
                       >
-                        <div className="w-9 h-9 rounded-full border-2 border-dashed border-slate-200 bg-white flex items-center justify-center text-[12px] font-sans font-bold text-slate-400 group-hover:border-slate-400 transition-all duration-250 shadow-3xs group-hover:scale-105 active:scale-95">
+                        <div className="w-9 h-9 rounded-full border-2 border-dashed border-slate-200 bg-white flex items-center justify-center text-[11px] font-sans font-bold text-slate-400 group-hover:border-slate-400 transition-all duration-250 shadow-3xs group-hover:scale-105 active:scale-95">
                           {prevIdx + 1}
                         </div>
-                        <span className="hidden lg:block text-[11px] font-semibold text-center mt-3 text-slate-400 truncate max-w-[95px] transition-colors group-hover:text-slate-600 leading-tight pb-1">
+                        <span className="hidden lg:block text-[10px] font-semibold text-center mt-2 text-slate-400 truncate max-w-[85px] transition-colors group-hover:text-slate-600 leading-tight pb-0.5">
                           {prevStep.title}
                         </span>
                       </button>
@@ -728,7 +736,7 @@ export function RegistrationWizard({
                   );
                 })()}
 
-                {/* 2nd: Main 6 Steps in between (Flexbox utilizes space beautifully) */}
+                {/* 2nd: Main 6 Steps in between (Flexbox utilizes space beautifully) - Compacted */}
                 {(() => {
                   const visibleIndices = getVisibleSteps();
                   return visibleIndices.map((idx) => {
@@ -742,7 +750,7 @@ export function RegistrationWizard({
                           type="button"
                           onClick={() => {
                             if (idx > 1 && idx > currentStep) {
-                              triggerToast('🔒 Further step screens are currently locked.');
+                              triggerToast(t.wizard.alertLockedSteps);
                               return;
                             }
                             setCurrentStep(idx);
@@ -750,7 +758,7 @@ export function RegistrationWizard({
                           className="flex flex-col items-center relative z-20 w-full cursor-pointer focus:outline-none group"
                         >
                           <div className={`
-                            w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-sans font-bold transition-all duration-300 shadow-3xs
+                            w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-sans font-bold transition-all duration-300 shadow-3xs
                             ${isActive
                               ? 'bg-slate-800 text-white ring-4 ring-slate-100 scale-105 shadow-sm font-bold'
                               : isCompleted
@@ -762,7 +770,7 @@ export function RegistrationWizard({
                           </div>
 
                           <span className={`
-                            hidden lg:block text-[11px] font-bold text-center mt-3 tracking-tight transition-colors duration-200 truncate max-w-[95px] pb-1
+                            hidden lg:block text-[10.5px] font-bold text-center mt-2 tracking-tight transition-colors duration-200 truncate max-w-[85px] pb-0.5
                             ${isActive 
                               ? 'text-slate-800 font-extrabold' 
                               : isCompleted 
@@ -774,14 +782,14 @@ export function RegistrationWizard({
                           </span>
 
                           {isActive && (
-                            <span className="lg:hidden text-[10px] font-bold text-slate-800 mt-2 tracking-tight">
+                            <span className="lg:hidden text-[9px] font-bold text-slate-800 mt-1.5 tracking-tight">
                               {step.title}
                             </span>
                           )}
 
                           {/* High fidelity horizontal active tab container border line at the bottom div border */}
                           {isActive && (
-                            <div className="absolute -bottom-6 left-2 right-2 h-[3.5px] bg-slate-800 rounded-t-sm z-30" />
+                            <div className="absolute -bottom-[12px] md:-bottom-[16px] left-2 right-2 h-[3px] bg-[#f89728] rounded-t-sm z-30" />
                           )}
                         </button>
                       </div>
@@ -789,7 +797,7 @@ export function RegistrationWizard({
                   });
                 })()}
 
-                {/* 3rd: Right Ghost Peek */}
+                {/* 3rd: Right Ghost Peek - Compacted */}
                 {stepperStartIndex + 6 < steps.length && (() => {
                   const nextIdx = stepperStartIndex + 6;
                   const nextStep = steps[nextIdx];
@@ -801,10 +809,10 @@ export function RegistrationWizard({
                         className="flex flex-col items-center relative z-20 cursor-pointer focus:outline-none select-none group w-full"
                         title={`Preview: Step ${nextIdx + 1} - ${nextStep.title}. Click to view next.`}
                       >
-                        <div className="w-9 h-9 rounded-full border-2 border-dashed border-slate-200 bg-white flex items-center justify-center text-[12px] font-sans font-bold text-slate-400 group-hover:border-slate-400 transition-all duration-250 shadow-3xs group-hover:scale-105 active:scale-95">
+                        <div className="w-9 h-9 rounded-full border-2 border-dashed border-slate-200 bg-white flex items-center justify-center text-[11px] font-sans font-bold text-slate-400 group-hover:border-slate-400 transition-all duration-250 shadow-3xs group-hover:scale-105 active:scale-95">
                           {nextIdx + 1}
                         </div>
-                        <span className="hidden lg:block text-[11px] font-semibold text-center mt-3 text-slate-400 truncate max-w-[95px] transition-colors group-hover:text-slate-600 leading-tight pb-1">
+                        <span className="hidden lg:block text-[10px] font-semibold text-center mt-2 text-slate-400 truncate max-w-[85px] transition-colors group-hover:text-slate-600 leading-tight pb-0.5">
                           {nextStep.title}
                         </span>
                       </button>
@@ -815,7 +823,7 @@ export function RegistrationWizard({
               </div>
             </div>
 
-            {/* Right Arrow Button */}
+            {/* Right Arrow Button - Compacted */}
             <button
               type="button"
               onClick={handleStepperNext}
@@ -827,7 +835,7 @@ export function RegistrationWizard({
               }`}
               title="Next steps"
             >
-              <ChevronRight size={18} className="stroke-[2.5]" />
+              <ChevronRight size={17} className="stroke-[2.5]" />
             </button>
 
           </div>
@@ -835,13 +843,13 @@ export function RegistrationWizard({
         </div>
       )}
 
-      {/* 3. Main Stage Container - Supporting dynamic layout switching */}
+      {/* 3. Main Stage Container - Supporting dynamic layout switching - Compacted spacing */}
       <div className={`
-        transition-all duration-305 bg-white
+        transition-all duration-305 bg-white flex flex-col min-h-[480px] h-[calc(100vh-210px)] max-h-[780px] overflow-hidden
         ${theme === 'option2' ? 'shadow-xl' : ''}
         ${stepperLayout === 'vertical' 
-          ? 'border-x border-b border-slate-200/80 flex flex-col md:flex-row min-h-[550px] overflow-hidden' 
-          : 'mt-6 border border-slate-200/80 p-8 md:p-12 min-h-[460px] relative rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.015)]'
+          ? 'border-x border-b border-slate-200/80 flex flex-col md:flex-row' 
+          : 'mt-2 border border-slate-200/80 relative rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.015)]'
         }
       `}>
         
@@ -853,10 +861,10 @@ export function RegistrationWizard({
             <div className="sticky top-6">
               <div className="mb-6">
                 <span className="text-[10px] uppercase font-mono font-bold text-xfair-orange tracking-widest block mb-1">
-                  XFAIR STATUS CONTROL
+                  {t.wizard.statusControlBrand}
                 </span>
                 <h4 className="font-display font-extrabold text-slate-800 text-sm">
-                  {steps.length}-Stage Registry Progress
+                  {t.wizard.progressHeader}
                 </h4>
               </div>
 
@@ -877,7 +885,7 @@ export function RegistrationWizard({
                         type="button"
                         onClick={() => {
                           if (idx > 1) {
-                            triggerToast('🔒 Further step screens are currently locked.');
+                            triggerToast(t.wizard.alertLockedSteps);
                             return;
                           }
                           setCurrentStep(idx);
@@ -929,48 +937,65 @@ export function RegistrationWizard({
           </div>
         )}
 
-        {/* Content Segment Wrapper */}
-        <div className={`transition-all duration-300 ${
-          stepperLayout === 'vertical' ? 'flex-1 p-6 md:p-8 flex flex-col justify-between min-h-[480px] pb-24' : 'w-full pb-24'
-        } ${
+        {/* Content Segment Wrapper - Compacted heights & vertical focus */}
+        <div className={`transition-all duration-300 flex-1 flex flex-col min-h-0 justify-between ${
           (showAddHotelForm && currentStep === 3) ? 'filter blur-sm pointer-events-none select-none opacity-85' : ''
         }`}>
           
-          {/* Step Guide Bar Title */}
-          {currentStep >= 4 && currentStep <= 9 && (
-            <div className="border-b border-slate-100 pb-4 mb-6">
-              <h3 className="font-display font-bold text-slate-800 text-lg flex items-center gap-2">
-                <span className="text-xfair-orange font-mono">Step {currentStep + 1}:</span>
-                <span>{steps[currentStep].title}</span>
-              </h3>
-              <p className="text-slate-500 text-xs font-mono select-none mt-1">
-                {steps[currentStep].desc}
-              </p>
+          {/* Scrollable Container for steps content */}
+          <div className="flex-1 overflow-y-auto p-4 md:p-6 min-h-0 scrollbar-thin">
+          
+          {/* Step Segment Heading with elegant left-accent bar - hidden for Step 1 and Step 2 to avoid duplication of Title & Step Tag */}
+          {currentStep > 1 && (
+            <div id="step-segment-outer-header" className="flex items-start sm:items-center justify-between pb-3.5 mb-5 border-b border-zinc-100 select-none">
+              <div className="flex items-center gap-3">
+                <div className="w-1.5 h-6 bg-[#f89728] rounded-full shrink-0" />
+                <div>
+                  <h3 className="font-sans font-black text-slate-800 text-[14px] sm:text-[15.5px] leading-tight uppercase tracking-tight">
+                    {steps[currentStep].title}
+                  </h3>
+                  <p className="text-slate-400 text-[11px] font-medium leading-none mt-1">
+                    {steps[currentStep].desc}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Quick page status indicator bubble */}
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/50 border border-slate-200.5 font-mono text-[9.5px] font-extrabold text-slate-500">
+                <span>STEP {currentStep + 1} OF {steps.length}</span>
+              </div>
             </div>
           )}
 
         {/* -------------------- STEP 1: PERSONAL DATA -------------------- */}
         {currentStep === 0 && (
-          <div className="space-y-8 animate-fade-in w-full">
-            <div className="flex items-center gap-3.5 mb-10 pb-1 border-l-4 border-l-[#f89728] pl-4 select-none">
-                <h4 className="text-zinc-900 font-extrabold text-[17px] font-sans tracking-tight">
-                  Personal information
+          <div className="space-y-5 animate-fade-in w-full max-w-4xl mx-auto">
+            
+            {/* Section 1: Personal Data */}
+            <div className="bg-white border border-zinc-200/95 rounded-2xl shadow-3xs transition-all hover:border-zinc-300/80 relative z-30 focus-within:z-50">
+              <div className="bg-[#FFFBF7] border-b border-[#FEE6D6] rounded-t-2xl px-5 py-3.5 flex items-center gap-3 select-none">
+                <div className="w-7.5 h-7.5 rounded-lg bg-orange-100/40 flex items-center justify-center text-[#f89728] border border-orange-200/30 shrink-0">
+                  <User size={15} className="stroke-[2.5]" />
+                </div>
+                <h4 className="font-sans font-black text-[12px] uppercase tracking-wider text-[#A75D24] leading-none">
+                  {language === 'de' ? 'PERSÖNLICHE DATEN' : 'PERSONAL DATA'}
                 </h4>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+              <div className="p-5 sm:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                 {/* Salutation select */}
                 <div className="space-y-1.5 relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Salutation <span className="text-red-500 font-sans">*</span>
+                    {t.wizard.salutationLabel} <span className="text-red-500 font-sans">*</span>
                   </label>
                   <CustomSelect 
                     value={personalData.salutation} 
                     onChange={(val) => setPersonalData({ ...personalData, salutation: val })}
-                    placeholder="Select salutation"
+                    placeholder={language === 'de' ? 'Anrede auswählen' : 'Select salutation'}
                     options={[
-                      { value: "Mr.", label: "Mr." },
-                      { value: "Mrs.", label: "Mrs." },
+                      { value: "Mr.", label: language === 'de' ? "Herr" : "Mr." },
+                      { value: "Mrs.", label: language === 'de' ? "Frau" : "Mrs." },
                       { value: "Mx.", label: "Mx." },
                       { value: "Dr.", label: "Dr." }
                     ]}
@@ -980,14 +1005,14 @@ export function RegistrationWizard({
                 {/* Title */}
                 <div className="space-y-1.5 relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Title
+                    {t.wizard.titleLabel}
                   </label>
                   <CustomSelect 
                     value={personalData.title}
                     onChange={(val) => setPersonalData({ ...personalData, title: val })}
-                    placeholder="Please select / None"
+                    placeholder={language === 'de' ? 'Bitte auswählen / Keine' : 'Please select / None'}
                     options={[
-                      { value: "None", label: "Please select / None" },
+                      { value: "None", label: language === 'de' ? "Bitte auswählen / Keine" : "Please select / None" },
                       { value: "Dr.", label: "Dr." },
                       { value: "Prof.", label: "Prof." },
                       { value: "Dipl.-Ing.", label: "Dipl.-Ing." }
@@ -998,13 +1023,13 @@ export function RegistrationWizard({
                 {/* First Name */}
                 <div className="space-y-1.5 relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    First name <span className="text-red-500 font-sans">*</span>
+                    {t.wizard.firstNameLabel} <span className="text-red-500 font-sans">*</span>
                   </label>
                   <input 
                     type="text" 
                     value={personalData.firstName}
                     onChange={(e) => setPersonalData({ ...personalData, firstName: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
                     required
                   />
                 </div>
@@ -1012,87 +1037,21 @@ export function RegistrationWizard({
                 {/* Last Name */}
                 <div className="space-y-1.5 relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Last name <span className="text-red-500 font-sans">*</span>
+                    {t.wizard.lastNameLabel} <span className="text-red-500 font-sans">*</span>
                   </label>
                   <input 
                     type="text" 
                     value={personalData.lastName}
                     onChange={(e) => setPersonalData({ ...personalData, lastName: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
                     required
-                  />
-                </div>
-
-                {/* Email Address */}
-                <div className="space-y-1.5 relative">
-                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Email <span className="text-red-500 font-sans">*</span>
-                  </label>
-                  <input 
-                    type="email" 
-                    value={personalData.email}
-                    onChange={(e) => setPersonalData({ ...personalData, email: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
-                    required
-                  />
-                </div>
-
-                {/* Mobile Phone Coordinates */}
-                <div className="space-y-1.5 relative">
-                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Mobile
-                  </label>
-                  <input 
-                    type="tel" 
-                    value={personalData.mobile}
-                    onChange={(e) => setPersonalData({ ...personalData, mobile: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
-                  />
-                </div>
-
-                {/* Position */}
-                <div className="space-y-1.5 relative">
-                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Position
-                  </label>
-                  <input 
-                    type="text" 
-                    value={personalData.position}
-                    onChange={(e) => setPersonalData({ ...personalData, position: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
-                  />
-                </div>
-
-                {/* Company Name */}
-                <div className="space-y-1.5 relative">
-                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Company
-                  </label>
-                  <input 
-                    type="text" 
-                    value={personalData.company}
-                    onChange={(e) => setPersonalData({ ...personalData, company: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
-                  />
-                </div>
-
-                {/* Company Address Block */}
-                <div className="space-y-1.5 relative">
-                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Company address
-                  </label>
-                  <input 
-                    type="text"
-                    value={personalData.companyAddress}
-                    onChange={(e) => setPersonalData({ ...personalData, companyAddress: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[14px] text-zinc-900 font-semibold outline-none transition-all h-11"
                   />
                 </div>
 
                 {/* Preferred communication lang */}
                 <div className="space-y-1.5 relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                    Preferred contact language
+                    {t.wizard.contactLangLabel || 'Preferred contact language'}
                   </label>
                   <CustomSelect 
                     value={personalData.contactLanguage}
@@ -1105,12 +1064,228 @@ export function RegistrationWizard({
                   />
                 </div>
               </div>
+            </div>
+          </div>
 
-            {/* Privacy Checkbox (Moved here below preferred contact language dropdown) */}
-            <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100/75 space-y-3 mb-10">
+          {/* Section 2: Contact */}
+            <div className="bg-white border border-zinc-200/95 rounded-2xl shadow-3xs transition-all hover:border-zinc-300/80 relative z-20 focus-within:z-50">
+              <div className="bg-[#FFFBF7] border-b border-[#FEE6D6] rounded-t-2xl px-5 py-3.5 flex items-center gap-3 select-none">
+                <div className="w-7.5 h-7.5 rounded-lg bg-orange-100/40 flex items-center justify-center text-[#f89728] border border-orange-200/30 shrink-0">
+                  <Phone size={15} className="stroke-[2.5]" />
+                </div>
+                <h4 className="font-sans font-black text-[12px] uppercase tracking-wider text-[#A75D24] leading-none">
+                  {language === 'de' ? 'KONTAKT' : 'CONTACT'}
+                </h4>
+              </div>
+
+              <div className="p-5 sm:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4">
+                {/* Email Address */}
+                <div className="space-y-1.5 relative">
+                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
+                    {language === 'de' ? 'E-Mail-Adresse' : 'Email'} <span className="text-red-500 font-sans">*</span>
+                  </label>
+                  <input 
+                    type="email" 
+                    value={personalData.email}
+                    onChange={(e) => setPersonalData({ ...personalData, email: e.target.value })}
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                    required
+                  />
+                </div>
+
+                {/* Mobile Phone Coordinates */}
+                <div className="space-y-1.5 relative">
+                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
+                    {language === 'de' ? 'Mobil' : 'Mobile'}
+                  </label>
+                  <input 
+                    type="tel" 
+                    value={personalData.mobile}
+                    onChange={(e) => setPersonalData({ ...personalData, mobile: e.target.value })}
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                  />
+                </div>
+
+                {/* Telephone field group */}
+                <div className="space-y-1.5 relative md:col-span-1">
+                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
+                    {language === 'de' ? 'Telefon' : 'Telephone'}
+                  </label>
+                  <div className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-4">
+                      <CustomSelect 
+                        value={personalData.telDialCode || '+49'} 
+                        onChange={(val) => setPersonalData({ ...personalData, telDialCode: val })}
+                        placeholder={language === 'de' ? 'Ländervorw.' : 'Dial'}
+                        options={[
+                          { value: "+49", label: "+49 (DE)" },
+                          { value: "+44", label: "+44 (UK)" },
+                          { value: "+1", label: "+1 (US)" },
+                          { value: "+380", label: "+380 (UA)" },
+                          { value: "+43", label: "+43 (AT)" },
+                          { value: "+41", label: "+41 (CH)" }
+                        ]}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <input 
+                        type="text" 
+                        placeholder={language === 'de' ? 'Vorwahl' : 'Area'}
+                        value={personalData.telAreaCode || ''}
+                        onChange={(e) => setPersonalData({ ...personalData, telAreaCode: e.target.value })}
+                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                      />
+                    </div>
+                    <div className="col-span-5">
+                      <input 
+                        type="text" 
+                        placeholder={language === 'de' ? 'Rufnummer' : 'Number'}
+                        value={personalData.telNumber || ''}
+                        onChange={(e) => setPersonalData({ ...personalData, telNumber: e.target.value })}
+                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mobile field group */}
+                <div className="space-y-1.5 relative md:col-span-1">
+                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
+                    {language === 'de' ? 'Mobil' : 'Mobile'}
+                  </label>
+                  <div className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-4">
+                      <CustomSelect 
+                        value={personalData.mobileDialCode || '+49'} 
+                        onChange={(val) => setPersonalData({ ...personalData, mobileDialCode: val })}
+                        placeholder={language === 'de' ? 'Ländervorw.' : 'Dial'}
+                        options={[
+                          { value: "+49", label: "+49 (DE)" },
+                          { value: "+44", label: "+44 (UK)" },
+                          { value: "+1", label: "+1 (US)" },
+                          { value: "+380", label: "+380 (UA)" },
+                          { value: "+43", label: "+43 (AT)" },
+                          { value: "+41", label: "+41 (CH)" }
+                        ]}
+                      />
+                    </div>
+                    <div className="col-span-3">
+                      <input 
+                        type="text" 
+                        placeholder={language === 'de' ? 'Vorwahl' : 'Area'}
+                        value={personalData.mobileAreaCode || ''}
+                        onChange={(e) => setPersonalData({ ...personalData, mobileAreaCode: e.target.value })}
+                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                      />
+                    </div>
+                    <div className="col-span-5">
+                      <input 
+                        type="text" 
+                        placeholder={language === 'de' ? 'Rufnummer' : 'Number'}
+                        value={personalData.mobileNumber || ''}
+                        onChange={(e) => setPersonalData({ ...personalData, mobileNumber: e.target.value })}
+                        className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Company */}
+            <div className="bg-white border border-zinc-200/95 rounded-2xl shadow-3xs transition-all hover:border-zinc-300/80 relative z-10 focus-within:z-50">
+              <div className="bg-[#FFFBF7] border-b border-[#FEE6D6] rounded-t-2xl px-5 py-3.5 flex items-center gap-3 select-none">
+                <div className="w-7.5 h-7.5 rounded-lg bg-orange-100/40 flex items-center justify-center text-[#f89728] border border-orange-200/30 shrink-0">
+                  <Building size={15} className="stroke-[2.5]" />
+                </div>
+                <h4 className="font-sans font-black text-[12px] uppercase tracking-wider text-[#A75D24] leading-none">
+                  {language === 'de' ? 'UNTERNEHMEN' : 'COMPANY'}
+                </h4>
+              </div>
+
+              <div className="p-5 sm:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4">
+                {/* Position */}
+                <div className="space-y-1.5 relative">
+                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
+                    {language === 'de' ? 'Position / Funktion' : 'Position'}
+                  </label>
+                  <input 
+                    type="text" 
+                    value={personalData.position}
+                    onChange={(e) => setPersonalData({ ...personalData, position: e.target.value })}
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                  />
+                </div>
+
+                {/* Company Name */}
+                <div className="space-y-1.5 relative">
+                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
+                    Company
+                  </label>
+                  <input 
+                    type="text" 
+                    value={personalData.company}
+                    onChange={(e) => setPersonalData({ ...personalData, company: e.target.value })}
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                  />
+                </div>
+
+                {/* Company Address Block */}
+                <div className="space-y-1.5 relative md:col-span-2">
+                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
+                    Company address
+                  </label>
+                  <input 
+                    type="text"
+                    value={personalData.companyAddress}
+                    onChange={(e) => setPersonalData({ ...personalData, companyAddress: e.target.value })}
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 4: Approver */}
+            <div className="bg-white border border-zinc-200/95 rounded-2xl shadow-3xs transition-all hover:border-zinc-300/80 relative z-10 focus-within:z-50">
+              <div className="bg-[#FFFBF7] border-b border-[#FEE6D6] rounded-t-2xl px-5 py-3.5 flex items-center gap-3 select-none">
+                <div className="w-7.5 h-7.5 rounded-lg bg-orange-100/40 flex items-center justify-center text-[#f89728] border border-orange-200/30 shrink-0">
+                  <ShieldCheck size={15} className="stroke-[2.5]" />
+                </div>
+                <h4 className="font-sans font-black text-[12px] uppercase tracking-wider text-[#A75D24] leading-none">
+                  {language === 'de' ? 'GENEHMIGER' : 'APPROVER'}
+                </h4>
+              </div>
+
+              <div className="p-5 sm:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div className="space-y-1.5 relative md:col-span-1">
+                  <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
+                    {language === 'de' ? 'Genehmiger' : 'Approver'} <span className="text-red-500 font-sans">*</span>
+                  </label>
+                  <CustomSelect 
+                    value={personalData.approver || 'Gerhard Schroeder'}
+                    onChange={(val) => setPersonalData({ ...personalData, approver: val })}
+                    options={[
+                      { value: "Gerhard Schroeder", label: "Gerhard Schroeder (CEO)" },
+                      { value: "Ursula von der Leyen", label: "Ursula von der Leyen (VP Sales)" },
+                      { value: "Angela Merkel", label: "Angela Merkel (HR Lead)" },
+                      { value: "Olaf Scholz", label: "Olaf Scholz (Events Director)" }
+                    ]}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Privacy Checkbox (Now acts as the final agreement block of Step 1 form) */}
+            <div className="p-4 bg-orange-50/50 rounded-xl border border-orange-100/75 space-y-3 mt-8 mb-4">
               <h4 className="text-slate-800 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
                 <ShieldCheck size={14} className="text-xfair-orange" />
-                <span>Data Protection Policy</span>
+                <span>{language === 'de' ? 'Datenschutzerklärung' : 'Data Protection Policy'}</span>
               </h4>
               <label className="flex items-start gap-3 cursor-pointer select-none group text-xs text-slate-600 leading-relaxed">
                 <input 
@@ -1120,150 +1295,26 @@ export function RegistrationWizard({
                   className="mt-0.5 accent-xfair-orange text-white w-4 h-4 cursor-pointer"
                 />
                 <span className="group-hover:text-slate-900 transition-colors">
-                  I agree that my personal data will be collected, processed and used within the framework of the event. My personal data such as attendance days, hotel booking dates, etc. is used for the sole purpose of the XFAIR trade show appearance at the event and its organization and management. The data is exclusively used for internal purposes. <span className="text-rose-500 font-bold font-mono">*</span>
+                  {language === 'de' ? (
+                    <>Ich stimme zu, dass meine personenbezogenen Daten im Rahmen der Veranstaltung erhoben, verarbeitet und genutzt werden. Meine personenbezogenen Daten wie Anwesenheitstage, Hotelbuchungsdaten usw. werden ausschließlich zum Zweck des XFAIR-Messeauftritts bei der Veranstaltung sowie deren Organisation und Verwaltung verwendet. Die Daten werden ausschließlich für interne Zwecke verwendet.</>
+                  ) : (
+                    <>I agree that my personal data will be collected, processed and used within the framework of the event. My personal data such as attendance days, hotel booking dates, etc. is used for the sole purpose of the XFAIR trade show appearance at the event and its organization and management. The data is exclusively used for internal purposes.</>
+                  )} <span className="text-rose-500 font-bold font-mono">*</span>
                 </span>
               </label>
             </div>
 
-            {/* Split line separator for Section 2 */}
-            <div className="border-t border-slate-100 my-8" />
-
-            {/* Title of second section "Contact" */}
-            <div className="flex items-center gap-3.5 mb-10 pb-1 border-l-4 border-l-[#f89728] pl-4 select-none">
-              <h4 className="text-zinc-900 font-extrabold text-[17px] font-sans tracking-tight">
-                Contact
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 mb-10">
-              {/* Telephone field group */}
-              <div className="space-y-1.5 relative md:col-span-1">
-                <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                  Telephone
-                </label>
-                <div className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-4">
-                    <CustomSelect 
-                      value={personalData.telDialCode || '+49'} 
-                      onChange={(val) => setPersonalData({ ...personalData, telDialCode: val })}
-                      placeholder="Dial"
-                      options={[
-                        { value: "+49", label: "+49 (DE)" },
-                        { value: "+44", label: "+44 (UK)" },
-                        { value: "+1", label: "+1 (US)" },
-                        { value: "+380", label: "+380 (UA)" },
-                        { value: "+43", label: "+43 (AT)" },
-                        { value: "+41", label: "+41 (CH)" }
-                      ]}
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <input 
-                      type="text" 
-                      placeholder="Area"
-                      value={personalData.telAreaCode || ''}
-                      onChange={(e) => setPersonalData({ ...personalData, telAreaCode: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
-                    />
-                  </div>
-                  <div className="col-span-5">
-                    <input 
-                      type="text" 
-                      placeholder="Number"
-                      value={personalData.telNumber || ''}
-                      onChange={(e) => setPersonalData({ ...personalData, telNumber: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Mobile field group */}
-              <div className="space-y-1.5 relative md:col-span-1">
-                <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                  Mobile
-                </label>
-                <div className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-4">
-                    <CustomSelect 
-                      value={personalData.mobileDialCode || '+49'} 
-                      onChange={(val) => setPersonalData({ ...personalData, mobileDialCode: val })}
-                      placeholder="Dial"
-                      options={[
-                        { value: "+49", label: "+49 (DE)" },
-                        { value: "+44", label: "+44 (UK)" },
-                        { value: "+1", label: "+1 (US)" },
-                        { value: "+380", label: "+380 (UA)" },
-                        { value: "+43", label: "+43 (AT)" },
-                        { value: "+41", label: "+41 (CH)" }
-                      ]}
-                    />
-                  </div>
-                  <div className="col-span-3">
-                    <input 
-                      type="text" 
-                      placeholder="Area"
-                      value={personalData.mobileAreaCode || ''}
-                      onChange={(e) => setPersonalData({ ...personalData, mobileAreaCode: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
-                    />
-                  </div>
-                  <div className="col-span-5">
-                    <input 
-                      type="text" 
-                      placeholder="Number"
-                      value={personalData.mobileNumber || ''}
-                      onChange={(e) => setPersonalData({ ...personalData, mobileNumber: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[15px] text-zinc-900 font-semibold outline-none transition-all h-11"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Split line separator for Section 3 */}
-            <div className="border-t border-slate-100 my-8" />
-
-            {/* Title of third section "Approver" */}
-            <div className="flex items-center gap-3.5 mb-10 pb-1 border-l-4 border-l-[#f89728] pl-4 select-none">
-              <h4 className="text-zinc-900 font-extrabold text-[17px] font-sans tracking-tight">
-                Approver
-              </h4>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8 mb-6 pb-4">
-              <div className="space-y-1.5 relative md:col-span-1">
-                <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
-                  Approver <span className="text-red-500 font-sans">*</span>
-                </label>
-                <CustomSelect 
-                  value={personalData.approver || 'Gerhard Schroeder'}
-                  onChange={(val) => setPersonalData({ ...personalData, approver: val })}
-                  options={[
-                    { value: "Gerhard Schroeder", label: "Gerhard Schroeder (CEO)" },
-                    { value: "Ursula von der Leyen", label: "Ursula von der Leyen (VP Sales)" },
-                    { value: "Angela Merkel", label: "Angela Merkel (HR Lead)" },
-                    { value: "Olaf Scholz", label: "Olaf Scholz (Events Director)" }
-                  ]}
-                />
-              </div>
-            </div>
           </div>
         )}
 
         {/* -------------------- STEP 2: ATTENDANCE DAYS -------------------- */}
         {currentStep === 1 && (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3.5 mb-10 pb-1 border-l-4 border-l-[#f89728] pl-4 select-none">
-              <h4 className="text-zinc-900 font-extrabold text-[17px] font-sans tracking-tight">
-                Enter your attendance days/time at the fair
-              </h4>
-            </div>
 
             {/* Quick Multi selection toggle */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <span className="text-slate-600 text-xs font-bold font-display uppercase tracking-wide">
-                Fairdays and time settings
+                {language === 'de' ? 'Messetage und Zeiteinstellungen' : 'Fairdays and time settings'}
               </span>
               <button
                 onClick={handleToggleSelectAllDays}
@@ -1272,7 +1323,7 @@ export function RegistrationWizard({
                 <div className={`w-3.5 h-3.5 rounded border border-xfair-orange flex items-center justify-center transition-all ${isAllDaysChecked ? 'bg-xfair-orange text-white' : 'bg-transparent'}`}>
                   {isAllDaysChecked && <Check size={10} />}
                 </div>
-                <span>Select all fair days</span>
+                <span>{language === 'de' ? 'Alle Messetage auswählen' : 'Select all fair days'}</span>
               </button>
             </div>
 
@@ -1310,15 +1361,15 @@ export function RegistrationWizard({
                     </div>
 
                     <div className="font-sans">
-                      <span className="font-bold text-slate-800 text-sm block">{day.dayOfWeek}</span>
-                      <span className="text-[11px] font-mono text-slate-500 block">Fair Day</span>
+                      <span className="font-bold text-slate-800 text-sm block">{getLocalizedDayOfWeek(day.dayOfWeek)}</span>
+                      <span className="text-[11px] font-mono text-slate-500 block">{language === 'de' ? 'Messetag' : 'Fair Day'}</span>
                     </div>
                   </label>
 
                   {/* Right Column times selectors */}
                   <div className="flex flex-wrap items-center gap-3 bg-white/70 p-2 border border-slate-100 rounded-lg shadow-inner z-10">
                     <div className="flex items-center gap-1.5 font-sans">
-                      <span className="text-[#4A5D7E] text-[12px] font-bold tracking-wide">Start:</span>
+                      <span className="text-[#4A5D7E] text-[12px] font-bold tracking-wide">{language === 'de' ? 'Beginn:' : 'Start:'}</span>
                       <TimeSelect
                         disabled={!day.checked}
                         value={day.startTime}
@@ -1330,7 +1381,7 @@ export function RegistrationWizard({
                     <div className="h-4 w-px bg-slate-200" />
 
                     <div className="flex items-center gap-1.5 font-sans">
-                      <span className="text-[#4A5D7E] text-[12px] font-bold tracking-wide">End:</span>
+                      <span className="text-[#4A5D7E] text-[12px] font-bold tracking-wide">{language === 'de' ? 'Ende:' : 'End:'}</span>
                       <TimeSelect
                         disabled={!day.checked}
                         value={day.endTime}
@@ -1348,11 +1399,6 @@ export function RegistrationWizard({
         {/* -------------------- STEP 3: MEETING ROOMS AGGREGATOR -------------------- */}
         {currentStep === 2 && (
           <div className="space-y-6 animate-fade-in">
-            <div className="flex items-center gap-3.5 mb-10 pb-1 border-l-4 border-l-[#f89728] pl-4 select-none">
-              <h4 className="text-zinc-900 font-extrabold text-[17px] font-sans tracking-tight">
-                Enter your meeting room(s) requests
-              </h4>
-            </div>
 
             {/* Date Switcher bar */}
             <div className="flex items-center justify-between border border-slate-200 bg-slate-50 rounded-xl px-4 py-2.5 shadow-inner">
@@ -1459,11 +1505,6 @@ export function RegistrationWizard({
         {/* -------------------- STEP 4: HOTEL BOOKING CONTROLLER -------------------- */}
         {currentStep === 3 && (
           <div className="space-y-6 animate-fade-in font-sans">
-            <div className="flex items-center gap-3.5 mb-10 pb-1 border-l-4 border-l-[#f89728] pl-4 select-none">
-              <h4 className="text-zinc-900 font-extrabold text-[17px] font-sans tracking-tight">
-                Enter any hotel requests you may have
-              </h4>
-            </div>
 
             <div>
               <h4 className="font-display font-semibold text-sm text-slate-850">Do you need a hotel room?</h4>
@@ -1678,7 +1719,7 @@ export function RegistrationWizard({
                       placeholder="e.g. Sarah Terry"
                       value={accompanyingPerson.name}
                       onChange={(e) => setAccompanyingPerson({ ...accompanyingPerson, name: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[14px] text-zinc-900 font-semibold outline-none transition-all h-10"
+                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[14px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-10"
                     />
                   </div>
 
@@ -1689,7 +1730,7 @@ export function RegistrationWizard({
                       placeholder="sarah.terry@example.com"
                       value={accompanyingPerson.email}
                       onChange={(e) => setAccompanyingPerson({ ...accompanyingPerson, email: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[14px] text-zinc-900 font-semibold outline-none transition-all h-10"
+                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[14px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-10"
                     />
                   </div>
 
@@ -1748,7 +1789,7 @@ export function RegistrationWizard({
                     maxLength={10}
                     value={postcodeRange.startCode}
                     onChange={(e) => setPostcodeRange({ ...postcodeRange, startCode: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2.5 text-[15px] font-mono font-bold text-slate-800 outline-none transition-all h-10"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] font-mono font-bold text-slate-800 hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 outline-none transition-all h-10"
                   />
                 </div>
 
@@ -1760,7 +1801,7 @@ export function RegistrationWizard({
                     maxLength={10}
                     value={postcodeRange.endCode}
                     onChange={(e) => setPostcodeRange({ ...postcodeRange, endCode: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2.5 text-[15px] font-mono font-bold text-slate-800 outline-none transition-all h-10"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] font-mono font-bold text-slate-800 hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 outline-none transition-all h-10"
                   />
                 </div>
 
@@ -1771,7 +1812,7 @@ export function RegistrationWizard({
                     placeholder="e.g. Munich Central Office"
                     value={postcodeRange.regionName}
                     onChange={(e) => setPostcodeRange({ ...postcodeRange, regionName: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2.5 text-[15px] font-semibold text-slate-800 outline-none transition-all h-10"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[15px] font-semibold text-slate-850 hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 outline-none transition-all h-10"
                   />
                 </div>
               </div>
@@ -1840,7 +1881,7 @@ export function RegistrationWizard({
                   placeholder="e.g. Berlin"
                   value={travelMode.departureCity}
                   onChange={(e) => setTravelMode({ ...travelMode, departureCity: e.target.value })}
-                  className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[14px] text-zinc-900 font-semibold outline-none transition-all h-10"
+                  className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[14px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-10"
                 />
               </div>
 
@@ -1850,7 +1891,7 @@ export function RegistrationWizard({
                   type="date"
                   value={travelMode.arrivalDate}
                   onChange={(e) => setNewHotelRequest({ ...newHotelRequest, checkIn: e.target.value })} // Fixed earlier but original has onChange below
-                  className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[14px] font-mono text-zinc-900 font-semibold outline-none transition-all h-10"
+                  className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[14px] font-mono hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-10"
                 />
               </div>
             </div>
@@ -2028,7 +2069,7 @@ export function RegistrationWizard({
                       placeholder="e.g. Michael Vance"
                       value={deputiesState.name}
                       onChange={(e) => setDeputiesState({ ...deputiesState, name: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[14px] text-zinc-900 font-semibold outline-none transition-all h-10"
+                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[14px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-10"
                     />
                   </div>
 
@@ -2039,7 +2080,7 @@ export function RegistrationWizard({
                       placeholder="m.vance@xfair.com"
                       value={deputiesState.email}
                       onChange={(e) => setDeputiesState({ ...deputiesState, email: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[14px] text-zinc-900 font-semibold outline-none transition-all h-10"
+                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[14px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-10"
                     />
                   </div>
 
@@ -2050,7 +2091,7 @@ export function RegistrationWizard({
                       placeholder="+49 176 11223344"
                       value={deputiesState.mobile}
                       onChange={(e) => setDeputiesState({ ...deputiesState, mobile: e.target.value })}
-                      className="w-full bg-transparent border-0 border-b border-zinc-200 focus:border-[#f89728] focus:ring-0 pl-0 py-2 text-[14px] text-zinc-900 font-semibold outline-none transition-all h-10"
+                      className="w-full bg-white border border-zinc-200 rounded-lg px-3 py-2 text-[14px] hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-10"
                     />
                   </div>
                 </div>
@@ -2062,11 +2103,6 @@ export function RegistrationWizard({
         {/* -------------------- STEP 11: DOWNLOAD AREA -------------------- */}
         {currentStep === 10 && (
           <div className="space-y-6 animate-fade-in font-sans">
-            <div className="flex items-center gap-3.5 mb-10 pb-1 border-l-4 border-l-[#f89728] pl-4 select-none">
-              <h4 className="text-zinc-900 font-extrabold text-[17px] font-sans tracking-tight">
-                Download useful information
-              </h4>
-            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Site Layout */}
@@ -2099,11 +2135,6 @@ export function RegistrationWizard({
         {/* -------------------- STEP 12: SUMMARY (FINAL AUDIT) -------------------- */}
         {currentStep === 11 && (
           <div className="space-y-8 animate-fade-in font-sans">
-            <div className="flex items-center gap-3.5 mb-10 pb-1 border-l-4 border-l-[#f89728] pl-4 select-none">
-              <h4 className="text-zinc-900 font-extrabold text-[17px] font-sans tracking-tight">
-                Review your data and click 'Finish' to complete the registration
-              </h4>
-            </div>
 
             <div className="space-y-6">
               
@@ -2446,18 +2477,16 @@ export function RegistrationWizard({
           </div>
         )}
 
-        {/* 4. Action navigation controls row - properly aligned and structured */}
-        <div id="wizard-navigation-toolbar" className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-zinc-200/60 py-4 flex items-center justify-between shadow-[0_-4px_16px_rgba(0,0,0,0.03)] select-none">
-          <div className={`w-full mx-auto flex items-center justify-between transition-all duration-300 ${
-            theme === 'option2'
-              ? 'max-w-6xl px-4 sm:px-8 md:px-12'
-              : 'max-w-none px-6 sm:px-10 lg:px-16 xl:px-20'
-          }`}>
+          </div> {/* End of Scrollable Container */}
+
+        {/* 4. Action navigation controls row - styled as a beautiful, docked bottom bar inside the main container */}
+        <div id="wizard-navigation-toolbar" className="flex-shrink-0 z-10 w-full select-none border-t border-[#FED9B7] bg-[#FFF3E5]">
+          <div className="bg-transparent py-3.5 px-6 sm:px-8 flex items-center justify-between w-full transition-all duration-300">
             <button
               onClick={handleBack}
               disabled={currentStep === 0}
               className={`
-                px-5 py-2.5 bg-white border border-zinc-250 text-zinc-650 text-xs font-bold rounded-lg transition-all flex items-center gap-2 select-none
+                px-5 py-2 bg-white border border-zinc-250 text-zinc-650 text-xs font-bold rounded-lg transition-all flex items-center gap-2 select-none
                 ${currentStep === 0 
                   ? 'opacity-30 cursor-not-allowed border-zinc-100 text-zinc-400' 
                   : 'hover:bg-zinc-50 hover:border-zinc-350 cursor-pointer active:scale-[0.98]'
@@ -2465,34 +2494,89 @@ export function RegistrationWizard({
               `}
             >
               <ArrowLeft size={14} className="stroke-[2.5]" />
-              <span>Back</span>
+              <span>{language === 'de' ? 'Zurück' : 'Back'}</span>
             </button>
 
             {currentStep === steps.length - 1 ? (
               <button
                 onClick={handleFinish}
-                className="px-6 py-2.5 bg-[#f89728] hover:bg-[#df7e10] active:scale-[0.98] text-white text-xs font-bold rounded-lg shadow-sm hover:shadow transition-all cursor-pointer flex items-center gap-2 select-none animate-slide-left"
+                className="px-6 py-2 bg-[#f89728] hover:bg-[#df7e10] active:scale-[0.98] text-white text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-2 select-none"
               >
-                <span>Finish Registration</span>
+                <span>{t.wizard.finishBtn}</span>
                 <CheckCircle2 size={14} />
               </button>
             ) : (
               <button
                 onClick={currentStep === 1 ? undefined : handleNext}
                 disabled={currentStep === 1}
-                className={`px-6 py-2.5 text-xs font-bold rounded-lg transition-all flex items-center gap-2 select-none ${
+                className={`px-6 py-2 text-xs font-bold rounded-lg transition-all flex items-center gap-2 select-none ${
                   currentStep === 1 
                     ? "bg-slate-200 text-slate-400 cursor-not-allowed shadow-none"
-                    : "bg-[#f89728] hover:bg-[#df7e10] active:scale-[0.98] text-white shadow-sm hover:shadow cursor-pointer"
+                    : "bg-[#f89728] hover:bg-[#df7e10] active:scale-[0.98] text-white cursor-pointer"
                 }`}
-                title={currentStep === 1 ? "Further steps are locked." : ""}
+                title={currentStep === 1 ? (language === 'de' ? 'Weitere Schritte sind gesperrt.' : "Further steps are locked.") : ""}
               >
-                <span>Next Step</span>
+                <span>{t.wizard.nextBtn}</span>
                 <ArrowRight size={14} className="stroke-[2.5]" />
               </button>
             )}
           </div>
         </div>
+
+        {/* Modal Overlay for Imprint/Privacy inside Wizard */}
+        {activePolicy !== 'none' && (
+          <div 
+            onClick={() => setActivePolicy('none')}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[9999] animate-fade-in"
+          >
+            <div 
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 text-left border border-slate-100 max-h-[80vh] overflow-y-auto relative animate-scale-up"
+            >
+              <button
+                onClick={() => setActivePolicy('none')}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+              >
+                ✕
+              </button>
+
+              {activePolicy === 'imprint' ? (
+                <div id="imprint-content-wizard" className="text-xs">
+                  <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-[#f89728] mb-3">
+                    <BookOpen size={20} />
+                  </div>
+                  <h4 className="font-display font-semibold text-slate-900 text-base mb-2">{t.footer.imprintTitle}</h4>
+                  <div className="text-slate-500 text-xs space-y-2 mt-3 leading-relaxed font-sans">
+                    <p><strong>xfair.com GmbH</strong></p>
+                    <p>Elisabeth-Schiemann-Bogen 1<br />85716 Unterschleißheim, Germany</p>
+                    <p><strong>{t.footer.managingDirectors}</strong><br />Markus Terry, John Doe</p>
+                    <p><strong>{t.footer.contact}</strong><br />{t.footer.phone} +49 (0) 89 19096820<br />Email: info@xfair.com</p>
+                    <p><strong>{t.footer.registerEntry}</strong><br />{t.footer.registryCourt} Munich District Court<br />{t.footer.registrationNumber} HRB 148292<br />{t.footer.vatLabel} DE 813928192</p>
+                  </div>
+                </div>
+              ) : (
+                <div id="privacy-content-wizard" className="text-xs">
+                  <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-[#f89728] mb-3">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <h4 className="font-display font-semibold text-slate-900 text-base mb-2">{t.footer.privacyTitle}</h4>
+                  <div className="text-slate-500 text-xs space-y-3 mt-3 leading-relaxed font-sans">
+                    <p>{t.footer.privacyP1}</p>
+                    <p><strong>{t.footer.privacyInfoColl}</strong><br />{t.footer.privacyInfoCollText}</p>
+                    <p><strong>{t.footer.privacyRights}</strong><br />{t.footer.privacyRightsText}</p>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setActivePolicy('none')}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold py-2.5 rounded-lg mt-5 transition-all cursor-pointer font-sans"
+              >
+                {t.footer.closeBtn}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* End of Content Segment Wrapper */}
         </div>
@@ -2524,7 +2608,7 @@ export function RegistrationWizard({
                   <select
                     disabled
                     value={newHotelRequest.status}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 text-zinc-400 cursor-not-allowed pl-0 py-1.5 text-xs font-semibold outline-none font-sans"
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-400 cursor-not-allowed font-semibold outline-none font-sans h-9"
                   >
                     <option value="Request">Request</option>
                   </select>
@@ -2534,7 +2618,7 @@ export function RegistrationWizard({
                   <select
                     disabled
                     value={newHotelRequest.hotelId}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 text-zinc-400 cursor-not-allowed pl-0 py-1.5 text-xs font-semibold outline-none font-sans"
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-400 cursor-not-allowed font-semibold outline-none font-sans h-9"
                   >
                     <option value="">Nothing selected</option>
                   </select>
@@ -2549,7 +2633,7 @@ export function RegistrationWizard({
                     type="date"
                     value={newHotelRequest.checkIn}
                     onChange={(e) => setNewHotelRequest({ ...newHotelRequest, checkIn: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-1.5 text-xs text-zinc-900 font-semibold outline-none transition-all font-mono"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-900 font-semibold outline-none hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 transition-all font-mono h-9"
                   />
                 </div>
                 <div className="space-y-1">
@@ -2558,7 +2642,7 @@ export function RegistrationWizard({
                     type="date"
                     value={newHotelRequest.checkOut}
                     onChange={(e) => setNewHotelRequest({ ...newHotelRequest, checkOut: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-1.5 text-xs text-zinc-900 font-semibold outline-none transition-all font-mono"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-900 font-semibold outline-none hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 transition-all font-mono h-9"
                   />
                 </div>
               </div>
@@ -2570,7 +2654,7 @@ export function RegistrationWizard({
                   <select
                     disabled
                     value={newHotelRequest.roomType}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 text-zinc-400 cursor-not-allowed pl-0 py-1.5 text-xs font-semibold outline-none font-sans"
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-400 cursor-not-allowed font-semibold outline-none font-sans h-9"
                   >
                     <option value="Please select">Please select</option>
                   </select>
@@ -2582,7 +2666,7 @@ export function RegistrationWizard({
                     placeholder="Guest name"
                     value={newHotelRequest.guestName}
                     onChange={(e) => setNewHotelRequest({ ...newHotelRequest, guestName: e.target.value })}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-1.5 text-xs text-zinc-900 font-semibold outline-none transition-all font-sans"
+                    className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-900 font-semibold outline-none hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 transition-all font-sans h-9"
                   />
                 </div>
               </div>
@@ -2616,7 +2700,7 @@ export function RegistrationWizard({
                   <select
                     disabled
                     value={newHotelRequest.earlyArrival}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 text-zinc-400 cursor-not-allowed pl-0 py-1.5 text-xs font-semibold outline-none font-sans"
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-400 cursor-not-allowed font-semibold outline-none font-sans h-9"
                   >
                     <option value="none">none</option>
                   </select>
@@ -2626,7 +2710,7 @@ export function RegistrationWizard({
                   <select
                     disabled
                     value={newHotelRequest.lateDeparture}
-                    className="w-full bg-transparent border-0 border-b border-zinc-200 text-zinc-400 cursor-not-allowed pl-0 py-1.5 text-xs font-semibold outline-none font-sans"
+                    className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-400 cursor-not-allowed font-semibold outline-none font-sans h-9"
                   >
                     <option value="none">none</option>
                   </select>
@@ -2641,7 +2725,7 @@ export function RegistrationWizard({
                   rows={2}
                   value={newHotelRequest.comment}
                   onChange={(e) => setNewHotelRequest({ ...newHotelRequest, comment: e.target.value })}
-                  className="w-full bg-transparent border-0 border-b border-zinc-200 hover:border-zinc-350 focus:border-[#f89728] focus:ring-0 pl-0 py-1.5 text-xs text-zinc-900 font-semibold outline-none transition-all resize-none font-sans"
+                  className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-1.5 text-xs text-zinc-900 font-semibold outline-none hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 transition-all resize-none font-sans"
                 />
               </div>
 
@@ -2695,6 +2779,20 @@ export function RegistrationWizard({
         </div>
       )}
 
+    </div>
+
+      {/* 4.5. Seperated Out End static footer of 'Imprint and data privacy' covering the whole page width */}
+      <footer className="fixed bottom-0 left-0 right-0 bg-slate-100 border-t border-slate-200/80 py-2.5 sm:py-3 select-none text-center z-40 h-11 flex items-center justify-center shadow-[0_-1px_3px_rgba(0,0,0,0.02)]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 flex items-center justify-center gap-6">
+          <span className="font-bold text-[11px] font-sans text-slate-500">
+            {t.footer.imprintLabel}
+          </span>
+          <span className="text-slate-300">|</span>
+          <span className="font-bold text-[11px] font-sans text-slate-500">
+            {t.footer.privacyLabel}
+          </span>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Calendar, MapPin, UserPlus, KeyRound, Info } from 'lucide-react';
-import { UpcomingEvent } from '../types';
+import { UpcomingEvent, Language } from '../types';
+import { TRANSLATIONS } from '../translations';
 
 interface LoginScreenProps {
+  language: Language;
   upcomingEvents: UpcomingEvent[];
   onLoginSuccess: (email: string) => void;
   onCreateAccountRequest: () => void;
+  onRecoverPasswordRequest: () => void;
   theme?: 'option1' | 'option2';
 }
 
@@ -69,7 +72,7 @@ function getEventLogo(id: string, title: string) {
   }
 }
 
-export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountRequest, theme = 'option1' }: LoginScreenProps) {
+export function LoginScreen({ language, upcomingEvents, onLoginSuccess, onCreateAccountRequest, onRecoverPasswordRequest, theme = 'option1' }: LoginScreenProps) {
   const eventsToRender = upcomingEvents.slice(0, 3);
   const [email, setEmail] = useState('steven.terry@xfair.com');
   const [password, setPassword] = useState('password123');
@@ -81,15 +84,18 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
   const [activeModal, setActiveModal] = useState<'none' | 'recover' | 'create' | 'help'>('none');
   const [modalEmail, setModalEmail] = useState('');
   const [modalSuccessMsg, setModalSuccessMsg] = useState('');
+  const [dontShowEvents, setDontShowEvents] = useState(false);
+
+  const t = TRANSLATIONS[language];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
-      setErrorMsg('Please enter your email address.');
+      setErrorMsg(t.createAccount.errEmailRequired);
       return;
     }
     if (!password) {
-      setErrorMsg('Please enter your password.');
+      setErrorMsg(language === 'de' ? 'Bitte geben Sie Ihr Passwort ein.' : 'Please enter your password.');
       return;
     }
 
@@ -106,7 +112,7 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
   const handleRecoverPassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (!modalEmail) return;
-    setModalSuccessMsg(`Password reset link has been dispatched to ${modalEmail}`);
+    setModalSuccessMsg(`${t.login.recoverSuccess}${modalEmail}`);
     setTimeout(() => {
       setModalSuccessMsg('');
       setModalEmail('');
@@ -116,7 +122,7 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
 
   const handleCreateAccount = (e: React.FormEvent) => {
     e.preventDefault();
-    setModalSuccessMsg('Registration submitted. Account waiting administrator activation.');
+    setModalSuccessMsg(t.login.createSuccess);
     setTimeout(() => {
       setModalSuccessMsg('');
       setActiveModal('none');
@@ -126,10 +132,10 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
   const renderPanels = () => {
     return (
       <>
-        {/* 1. Left Column - Immersive Deep Space Sign-in panel (takes equal 1/2 width) */}
+        {/* 1. Left Column - Immersive Deep Space Sign-in panel */}
         <div 
           id="login-left-panel"
-          className="w-full md:w-1/2 min-h-[calc(100vh-72px)] bg-[#0A0F1D] px-6 py-6 sm:px-10 md:px-12 xl:px-16 text-white flex flex-col justify-center relative overflow-hidden shrink-0 border-b md:border-b-0 md:border-r border-[#151D30]"
+          className={`w-full ${dontShowEvents ? 'w-full' : 'md:w-1/2'} bg-[#0B101D] px-6 py-10 sm:px-10 md:px-12 xl:px-14 text-white flex flex-col justify-center relative overflow-hidden shrink-0 transition-all duration-300 ${dontShowEvents ? '' : 'border-b md:border-b-0 md:border-r border-slate-800'}`}
         >
           {/* Subtle decorative glowing spheres */}
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(248,151,40,0.08),transparent_60%)] pointer-events-none" />
@@ -139,11 +145,8 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
           <div className="w-full max-w-md mx-auto relative z-10 flex flex-col justify-center py-4">
             {/* Header Block branding */}
             <div id="registration-header-area" className="relative z-10 space-y-2">
-              <span className="inline-block text-[10px] uppercase font-mono font-bold tracking-widest text-[#f89728] bg-[#f89728]/10 px-2.5 py-1 rounded border border-[#f89728]/20">
-                XFAIR GMBH
-              </span>
               <h1 className="font-display text-3xl font-extrabold tracking-tight text-white mt-1">
-                Registration
+                {t.login.title}
               </h1>
             </div>
 
@@ -151,15 +154,15 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
             <form onSubmit={handleSubmit} className="mt-8 mb-4 space-y-5.5 relative z-10">
               <div>
                 <label htmlFor="login-email-input" className="block text-xs font-semibold text-[#8C9BB0] mb-2 font-sans">
-                  Email address
+                  {t.login.emailLabel}
                 </label>
                 <input
                   id="login-email-input"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#111625] border border-[#222F46] text-white placeholder-white/20 text-xs rounded-lg px-4 py-3.5 outline-none focus:border-[#f89728] focus:ring-4 focus:ring-[#f89728]/10 transition-all duration-200 font-sans shadow-inner"
-                  placeholder="email@xfair.com"
+                  className="w-full bg-[#111625] border border-[#222F46] text-white placeholder-white/20 text-xs rounded-lg px-4 py-3.5 outline-none focus:border-[#f89728] focus:ring-4 focus:ring-[#f89728]/10 transition-all duration-200 font-sans shadow-inner h-12"
+                  placeholder={t.login.emailPlaceholder}
                   required
                 />
               </div>
@@ -167,11 +170,15 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label htmlFor="login-password-input" className="block text-xs font-semibold text-[#8C9BB0] font-sans">
-                    Password
+                    {t.login.passwordLabel}
                   </label>
-                  <span className="text-[10px] text-[#8C9BB0]/80 font-medium font-sans select-none cursor-default pointer-events-none">
-                    Recover password
-                  </span>
+                  <button
+                    type="button"
+                    onClick={onRecoverPasswordRequest}
+                    className="text-[10px] text-[#8C9BB0]/80 hover:text-[#f89728] font-bold font-sans cursor-pointer transition-colors"
+                  >
+                    {t.login.recoverPasswordLink}
+                  </button>
                 </div>
                 <div id="password-field-container" className="relative">
                   <input
@@ -179,8 +186,8 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-[#111625] border border-[#222F46] text-white placeholder-white/20 text-xs rounded-lg pl-4 pr-11 py-3.5 outline-none focus:border-[#f89728] focus:ring-4 focus:ring-[#f89728]/10 transition-all duration-200 font-sans shadow-inner"
-                    placeholder="••••••••"
+                    className="w-full bg-[#111625] border border-[#222F46] text-white placeholder-white/20 text-xs rounded-lg pl-4 pr-11 py-3.5 outline-none focus:border-[#f89728] focus:ring-4 focus:ring-[#f89728]/10 transition-all duration-200 font-sans shadow-inner h-12"
+                    placeholder={t.login.passwordPlaceholder}
                     required
                   />
                   <button
@@ -209,7 +216,7 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
                   id="login-submit-button"
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#f89728] hover:bg-[#df7e10] text-white font-bold text-xs rounded-lg py-3.5 cursor-pointer transition-all duration-150 hover:scale-[1.005] active:scale-[0.995] outline-none shadow-md flex items-center justify-center gap-2 font-sans"
+                  className="w-full bg-[#f89728] hover:bg-[#df7e10] text-white font-bold text-xs rounded-lg py-3.5 cursor-pointer transition-all duration-150 hover:scale-[1.005] active:scale-[0.995] outline-none shadow-md flex items-center justify-center gap-2 font-sans h-12"
                 >
                   {isSubmitting ? (
                     <>
@@ -217,10 +224,10 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      <span>Logging in...</span>
+                      <span>{t.login.loggingInBtn}</span>
                     </>
                   ) : (
-                    'Log in'
+                    t.login.loginBtn
                   )}
                 </button>
               </div>
@@ -228,99 +235,135 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
 
             {/* Custom Modern Stacked Recovery Action Links inside side-panel */}
             <div id="login-action-links" className="mt-8 relative z-10 pt-2 text-xs text-[#8C9BB0] font-sans">
-              <span>Don't have an account?</span>{' '}
+              <span>{t.login.dontHaveAccount}</span>{' '}
               <button
                 type="button"
                 onClick={onCreateAccountRequest}
                 className="text-white hover:text-[#f89728] font-bold transition-colors cursor-pointer underline underline-offset-2"
               >
-                Create Account!
+                {t.login.createAccountLink}
               </button>
             </div>
           </div>
         </div>
 
-        {/* 2. Right Column - Sleek Spacious Upcoming Account Events presentation (takes equal 1/2 width with expanded layout containers) */}
-        <div id="login-right-panel" className="w-full md:w-1/2 min-h-[calc(100vh-72px)] px-4 sm:px-8 md:px-10 lg:px-12 flex flex-col justify-center bg-[#FAFAFC]">
-          <div className="w-full max-w-2xl lg:max-w-3xl mx-auto flex flex-col h-full justify-center py-6 transition-all duration-300">
-            
-            <div className="flex items-center justify-between pb-3.5 border-b border-zinc-200/55">
-              <h2 className="font-sans font-bold text-slate-800 text-sm md:text-base flex items-center gap-1.5">
-                <span className="text-[#f89728] font-extrabold font-mono text-base bg-[#FFF1E0] px-2.5 py-0.5 rounded-lg mr-1.5">3</span>
-                <span className="tracking-tight text-slate-950 font-bold font-sans">Upcoming event(s)</span>
-              </h2>
-            </div>
+        {/* 2. Right Column - Sleek Spacious Upcoming Account Events presentation */}
+        {!dontShowEvents && (
+          <div id="login-right-panel" className="w-full md:w-1/2 px-4 sm:px-8 md:px-10 lg:px-12 py-10 flex flex-col justify-center bg-[#fafafc]">
+            <div className="w-full max-w-2xl lg:max-w-3xl mx-auto flex flex-col justify-center py-2 transition-all duration-300">
+              
+              <div className="flex items-center justify-between pb-3.5 border-b border-zinc-200/55">
+                <h2 className="font-sans font-bold text-slate-800 text-sm md:text-base flex items-center gap-1.5">
+                  <span className="text-[#f89728] font-extrabold font-mono text-base bg-[#FFF1E0] px-2.5 py-0.5 rounded-lg mr-1.5">3</span>
+                  <span className="tracking-tight text-slate-950 font-bold font-sans">{t.login.upcomingTitleCount}</span>
+                </h2>
+              </div>
 
-            {/* Scrolling layout containing scheduled events & high-fidelity custom scroll tracking guides */}
-            <div className="flex gap-5 items-stretch mt-6 relative">
-              {/* Event Cards filling the expanded layouts */}
-              <div 
-                id="upcoming-events-scroller"
-                className="flex-1 space-y-4"
-              >
-                {eventsToRender.map((evt) => (
-                  <div
-                    key={evt.id}
-                    className="group flex flex-row items-center gap-4.5 p-4.5 md:p-5 rounded-2xl border border-[#F1F3F7] bg-white hover:bg-[#F8FAFC] hover:border-[#f89728]/20 hover:shadow-premium transition-all duration-300 cursor-pointer w-full text-slate-700"
-                  >
-                    {/* Beautiful customized event badge vector representation */}
-                    <div className="shrink-0">
-                      {getEventLogo(evt.id, evt.title)}
-                    </div>
+              {/* Scrolling layout containing scheduled events & high-fidelity custom scroll tracking guides */}
+              <div className="flex gap-5 items-stretch mt-6 relative">
+                {/* Event Cards filling the expanded layouts */}
+                <div 
+                  id="upcoming-events-scroller"
+                  className="flex-1 space-y-4"
+                >
+                  {eventsToRender.map((evt) => {
+                    // Translate specific locations on login screen cleanly
+                    let localizedLocation = evt.location;
+                    if (language === 'de') {
+                      if (evt.location.includes('Ireland')) localizedLocation = evt.location.replace('Ireland', 'Irland');
+                      else if (evt.location.includes('Switzerland')) localizedLocation = evt.location.replace('Switzerland', 'Schweiz');
+                      else if (evt.location.includes('Netherlands')) localizedLocation = evt.location.replace('Netherlands', 'Niederlande');
+                      else if (evt.location.includes('Portugal')) localizedLocation = evt.location.replace('Portugal', 'Portugal');
+                      else if (evt.location.includes('Germany')) localizedLocation = evt.location.replace('Germany', 'Deutschland');
+                    }
+                    return (
+                      <div
+                        key={evt.id}
+                        className="group flex flex-row items-center gap-4.5 p-4.5 md:p-5 rounded-2xl border border-[#F1F3F7] bg-white hover:bg-[#F8FAFC] hover:border-[#f89728]/20 hover:shadow-premium transition-all duration-300 cursor-pointer w-full text-slate-700 font-medium"
+                      >
+                        {/* Beautiful customized event badge vector representation */}
+                        <div className="shrink-0">
+                          {getEventLogo(evt.id, evt.title)}
+                        </div>
 
-                    {/* Metadata titles & locations */}
-                    <div className="flex-1 min-w-0 space-y-1">
-                      <h3 className="font-sans font-bold text-slate-900 group-hover:text-[#f89728] text-sm md:text-base transition-colors tracking-tight leading-snug">
-                        {evt.title}
-                      </h3>
-                      
-                      <div className="space-y-1 text-slate-500 text-xs mt-1">
-                        {evt.dateRange && (
-                          <div className="flex items-center gap-1.5 font-mono tracking-tight text-slate-500/90">
-                            <Calendar size={13} className="text-slate-400 shrink-0" />
-                            <span>{evt.dateRange}</span>
+                        {/* Metadata titles & locations */}
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <h3 className="font-sans font-bold text-slate-900 group-hover:text-[#f89728] text-sm md:text-base transition-colors tracking-tight leading-snug">
+                            {evt.title}
+                          </h3>
+                          
+                          <div className="space-y-1 text-slate-500 text-xs mt-1">
+                            {evt.dateRange && (
+                              <div className="flex items-center gap-1.5 font-mono tracking-tight text-slate-500/90">
+                                <Calendar size={13} className="text-slate-400 shrink-0" />
+                                <span>{evt.dateRange}</span>
+                              </div>
+                            )}
+
+                            <div className="flex items-center gap-1.5 text-slate-500/95">
+                              <MapPin size={13} className="text-slate-400 shrink-0" />
+                              <span className="truncate text-slate-600 font-medium">{localizedLocation}</span>
+                            </div>
                           </div>
-                        )}
-
-                        <div className="flex items-center gap-1.5 text-slate-500/95">
-                          <MapPin size={13} className="text-slate-400 shrink-0" />
-                          <span className="truncate text-slate-600 font-medium">{evt.location}</span>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
+            </div>
           </div>
-        </div>
+        )}
       </>
     );
   };
 
   return (
-    <div id="login-screen" className={`w-full select-none ${
-      theme === 'option2' 
-        ? 'min-h-[calc(100vh-72px)] flex items-center justify-center p-4 md:p-8 py-12' 
-        : 'flex-1 flex flex-col md:flex-row bg-[#FAFBFD] min-h-[calc(100vh-72px)]'
-    }`}>
-      {theme === 'option2' ? (
+    <div id="login-screen" className="w-full select-none flex-1 flex flex-col items-center justify-center py-6 sm:py-8 px-4 sm:px-6 bg-transparent">
+      
+      {/* "Don't show upcoming events" Toggle */}
+      <div className={`w-full ${
+        dontShowEvents ? 'max-w-md' : 'max-w-4xl lg:max-w-5xl'
+      } flex justify-end mb-3.5 transition-all duration-300`}>
         <div 
-          id="login-main-card"
-          className="w-full max-w-5xl lg:max-w-6xl bg-[#FAFAFC] rounded-2xl shadow-active border border-zinc-200/55 overflow-hidden flex flex-col md:flex-row transition-all duration-300 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5)]"
+          onClick={() => setDontShowEvents(!dontShowEvents)}
+          className="flex items-center select-none bg-white border border-slate-250 hover:border-slate-350 shadow-3xs p-1.5 rounded-full cursor-pointer transition-all duration-200"
+          title={dontShowEvents ? "Show upcoming events" : "Hide upcoming events"}
         >
-          {renderPanels()}
+          <button
+            type="button"
+            role="switch"
+            aria-checked={dontShowEvents}
+            className={`relative inline-flex h-5 w-9.5 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+              dontShowEvents ? 'bg-[#f89728]' : 'bg-slate-300'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                dontShowEvents ? 'translate-x-4.5' : 'translate-x-0'
+              }`}
+            />
+          </button>
         </div>
-      ) : (
-        renderPanels()
-      )}
+      </div>
+
+      <div 
+        id="login-main-card"
+        className={`w-full ${
+          dontShowEvents ? 'max-w-md md:max-w-md lg:max-w-md' : 'max-w-4xl lg:max-w-5xl'
+        } bg-[#FAFAFC]/40 backdrop-blur-md rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.25)] border border-white/20 overflow-hidden flex flex-col ${
+          dontShowEvents ? 'items-center justify-center' : 'md:flex-row'
+        } transition-all duration-300 hover:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.3)]`}
+      >
+        {renderPanels()}
+      </div>
 
       {/* RENDER MODALS (Pure React, beautiful styling & overlay) */}
       {activeModal !== 'none' && (
         <div 
           id="login-dialog-overlay"
-          className="fixed inset-0 bg-[#0A0F1D]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in"
+          className="fixed inset-0 bg-[#0B101D]/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in"
         >
           <div 
             id="login-dialog-container"
@@ -340,10 +383,10 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
                   <KeyRound size={20} />
                 </div>
                 <h3 className="text-base font-display font-bold text-slate-900 mb-2">
-                  Recover System Password
+                  {t.login.recoverTitle}
                 </h3>
                 <p className="text-slate-500 text-xs mb-4 leading-relaxed">
-                  Provide your corporate email address registered under the Xfair EMS directory. We will shoot diagnostic coordinates to recalibrate credentials.
+                  {t.login.recoverDesc}
                 </p>
                 {modalSuccessMsg ? (
                   <div className="p-3 bg-emerald-50 text-emerald-800 text-xs rounded border border-emerald-100 font-semibold mb-2">
@@ -355,15 +398,15 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
                       type="email"
                       value={modalEmail}
                       onChange={(e) => setModalEmail(e.target.value)}
-                      placeholder="steven.terry@xfair.com"
-                      className="w-full border border-zinc-200/90 rounded-lg px-3 py-2 text-xs focus:ring-4 focus:ring-xfair-orange/15 focus:border-[#f89728] outline-none transition-all"
+                      placeholder={t.login.recoverInputPlaceholder}
+                      className="w-full border border-zinc-200/90 rounded-lg px-3 py-2 text-xs focus:ring-4 focus:ring-xfair-orange/15 focus:border-[#f89728] outline-none transition-all h-10"
                       required
                     />
                     <button
                       type="submit"
-                      className="w-full bg-gradient-to-r from-[#f89728] to-[#df7e10] hover:brightness-105 hover:shadow-active text-white text-xs font-bold py-2.5 rounded-lg transition-all duration-150 cursor-pointer uppercase tracking-wide"
+                      className="w-full bg-gradient-to-r from-[#f89728] to-[#df7e10] hover:brightness-105 hover:shadow-active text-white text-xs font-bold py-2.5 rounded-lg transition-all duration-150 cursor-pointer uppercase tracking-wide h-10"
                     >
-                      Dispatch Reset Coordinate
+                      {t.login.recoverBtn}
                     </button>
                   </form>
                 )}
@@ -376,10 +419,10 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
                   <UserPlus size={20} />
                 </div>
                 <h3 className="text-base font-display font-bold text-slate-900 mb-2">
-                  Create EMS Account
+                  {t.login.createTitle}
                 </h3>
                 <p className="text-slate-500 text-xs mb-4 leading-relaxed">
-                  Request access credentials to start submitting and organizing events. Your application must be validated by the respective event manager.
+                  {t.login.createDesc}
                 </p>
                 {modalSuccessMsg ? (
                   <div className="p-3 bg-emerald-50 text-emerald-800 text-xs rounded border border-emerald-100 font-semibold mb-2">
@@ -388,22 +431,22 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
                 ) : (
                   <form onSubmit={handleCreateAccount} className="space-y-3">
                     <div>
-                      <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1 font-sans">Full Name</label>
-                      <input type="text" placeholder="Steven Terry" className="w-full border border-zinc-200/90 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#f89728]" required />
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1 font-sans">{t.login.createFullName}</label>
+                      <input type="text" placeholder="Steven Terry" className="w-full border border-zinc-200/90 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#f89728] h-10" required />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1 font-sans">Email address</label>
-                      <input type="email" placeholder="steven.terry@xfair.com" className="w-full border border-zinc-200/90 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#f89728]" required />
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1 font-sans">{t.login.createEmail}</label>
+                      <input type="email" placeholder="steven.terry@xfair.com" className="w-full border border-zinc-200/90 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#f89728] h-10" required />
                     </div>
                     <div>
-                      <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1 font-sans">Company / Event Agency</label>
-                      <input type="text" placeholder="XFAIR Deutschland GmbH" className="w-full border border-zinc-200/90 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#f89728]" required />
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase mb-1 font-sans">{t.login.createCompany}</label>
+                      <input type="text" placeholder="XFAIR Deutschland GmbH" className="w-full border border-zinc-200/90 rounded-lg px-3 py-2 text-xs outline-none focus:border-[#f89728] h-10" required />
                     </div>
                     <button
                       type="submit"
-                      className="w-full bg-[#f89728] hover:bg-[#df7e10] text-white text-xs font-bold py-2.5 rounded-lg shadow-sm transition-all duration-150 mt-2 cursor-pointer uppercase tracking-wide"
+                      className="w-full bg-[#f89728] hover:bg-[#df7e10] text-white text-xs font-bold py-2.5 rounded-lg shadow-sm transition-all duration-150 mt-2 cursor-pointer uppercase tracking-wide h-10"
                     >
-                      Submit access request
+                      {t.login.createBtn}
                     </button>
                   </form>
                 )}
@@ -416,24 +459,24 @@ export function LoginScreen({ upcomingEvents, onLoginSuccess, onCreateAccountReq
                   <Info size={20} />
                 </div>
                 <h3 className="text-base font-display font-bold text-slate-900 mb-2">
-                  EMS Portal Core Help
+                  {t.login.helpTitle}
                 </h3>
                 <div className="text-slate-500 text-xs space-y-2.5 leading-relaxed">
                   <p>
-                    <strong>What is Xfair EMS?</strong> Xfair Event Management System is a centralized secure framework utilized to operate registrars, user telemetry, and dynamic fair schedules.
+                    <strong>{t.login.helpWhatIsTitle}</strong> {t.login.helpWhatIsDesc}
                   </p>
                   <p>
-                    <strong>How to login?</strong> For standard testing purposes, you may directly use the pre-entered credentials (Email: <code>steven.terry@xfair.com</code>) and click the active orange <strong>Log in</strong> block.
+                    <strong>{t.login.helpHowToTitle}</strong> {t.login.helpHowToDesc}
                   </p>
                   <p>
-                    <strong>System Assistance:</strong> If you face directory sync issues, contact system administration at <code>support@xfair.com</code>.
+                    <strong>{t.login.helpSupportTitle}</strong> {t.login.helpSupportDesc}
                   </p>
                 </div>
                 <button
                   onClick={() => setActiveModal('none')}
-                  className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold py-2.5 rounded-lg mt-5 border border-zinc-200/55 transition-all duration-150 cursor-pointer"
+                  className="w-full bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold py-2.5 rounded-lg mt-5 border border-zinc-200/55 transition-all duration-150 cursor-pointer h-10"
                 >
-                  Understood
+                  {t.login.helpCloseBtn}
                 </button>
               </div>
             )}

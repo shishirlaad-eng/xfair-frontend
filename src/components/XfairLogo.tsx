@@ -1,6 +1,4 @@
 import React from 'react';
-// @ts-ignore
-import xfairLogoImg from '../xfair_logo-removebg-preview.png';
 
 interface XfairLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -19,7 +17,7 @@ export function XfairLogo({ size = 'md', darkText = true }: XfairLogoProps) {
     <div id="xfair-logo-container" className="flex items-center select-none">
       <img
         id="xfair-logo-image"
-        src={xfairLogoImg}
+        src="/xfair_logo-removebg-preview.png"
         alt="Xfair Logo"
         className={`${heightClasses[size]} w-auto object-contain`}
         referrerPolicy="no-referrer"

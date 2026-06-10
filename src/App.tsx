@@ -4,45 +4,12 @@ import { XfairLogo } from './components/XfairLogo';
 import { BackgroundOverlay } from './components/BackgroundOverlay';
 import { LoginScreen } from './components/LoginScreen';
 import { CreateAccountScreen } from './components/CreateAccountScreen';
+import { RecoverPasswordScreen } from './components/RecoverPasswordScreen';
 import { RegistrationsScreen } from './components/RegistrationsScreen';
 import { FooterLinks } from './components/FooterLinks';
 import { INITIAL_UPCOMING_EVENTS, INITIAL_REGISTRATIONS } from './data';
 import { Language, UserSession } from './types';
-
-// Simple translations dictionary showing next-level localization polish
-const DICTIONARY: Record<Language, {
-  registration: string;
-  selectEvent: string;
-  upcomingCount: string;
-  overview: string;
-  imprint: string;
-  privacy: string;
-}> = {
-  en: {
-    registration: 'Registration',
-    selectEvent: 'Select event for registration',
-    upcomingCount: '5 Upcoming event(s)',
-    overview: 'Registrations overview',
-    imprint: 'Imprint',
-    privacy: 'Data Privacy'
-  },
-  uk: {
-    registration: 'Registration Portal',
-    selectEvent: 'Select event for registration',
-    upcomingCount: '5 Scheduled event(s)',
-    overview: 'Registrations overview',
-    imprint: 'Imprint',
-    privacy: 'Data Privacy'
-  },
-  de: {
-    registration: 'Registrierung',
-    selectEvent: 'Event für die Registrierung auswählen',
-    upcomingCount: '5 Anstehende(s) Event(s)',
-    overview: 'Registrierungsübersicht',
-    imprint: 'Impressum',
-    privacy: 'Datenschutz'
-  }
-};
+import { TRANSLATIONS } from './translations';
 
 export default function App() {
   const [language, setLanguage] = useState<Language>('en');
@@ -56,6 +23,7 @@ export default function App() {
   const [showBrandInfo, setShowBrandInfo] = useState(false);
   const [isWizardOpen, setIsWizardOpen] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
   const loginTheme = 'option1';
 
   const triggerToast = (msg: string) => {
@@ -67,9 +35,9 @@ export default function App() {
 
   // Language selector parameters
   const languagesConfig = {
-    en: { name: 'English (US)', flag: '🇺🇸' },
-    uk: { name: 'English (UK)', flag: '🇬🇧' },
-    de: { name: 'Deutsch', flag: '🇩🇪' }
+    en: { name: 'English (US)', flag: '/us.webp' },
+    uk: { name: 'English (UK)', flag: '/uk.png' },
+    de: { name: 'Deutsch', flag: '/de.png' }
   };
 
   const handleLogin = (email: string) => {
@@ -87,6 +55,8 @@ export default function App() {
       isLoggedIn: false
     });
     setIsCreatingAccount(false);
+    setIsRecoveringPassword(false);
+    setIsWizardOpen(false);
   };
 
   const toggleLanguage = (lang: Language) => {
@@ -94,13 +64,15 @@ export default function App() {
     setShowLangMenu(false);
   };
 
+  const t = TRANSLATIONS[language];
+
   return (
     <div className="relative min-h-screen flex flex-col justify-between">
       {/* 1. Styled Background Elements & Vectors */}
       <BackgroundOverlay theme={loginTheme} />
 
       {/* 2. Global Portal Header wrapper (Top Bar) */}
-      <header id="global-portal-header" className="w-full bg-white/95 border-b border-slate-100 shadow-sm backdrop-blur-md sticky top-0 z-40 transition-colors duration-300">
+      <header id="global-portal-header" className="w-full bg-[#ffffff] border-b border-slate-100 shadow-sm sticky top-0 z-40 transition-colors duration-300">
         <div className="max-w-none px-4 sm:px-8 lg:px-12 h-18 flex items-center justify-between">
           
           {/* Left Block inside Header */}
@@ -109,7 +81,7 @@ export default function App() {
             <div className="flex items-center gap-2">
               <XfairLogo size="md" darkText={true} />
               <span className="hidden xs:inline-block bg-slate-100 text-slate-500 font-mono text-[9px] px-1.5 py-0.5 rounded uppercase tracking-wider font-bold">
-                EMS PRO
+                {t.header.emsPro}
               </span>
             </div>
           </div>
@@ -120,14 +92,19 @@ export default function App() {
 
 
               {/* Interactive brand Flag Picker */}
-              <div className="relative">
+              <div className="relative inline-block">
                 <button
                   onClick={() => setShowLangMenu(!showLangMenu)}
-                  className="flex items-center gap-2.5 bg-white border border-slate-200/90 px-3.5 py-1.5 rounded-lg text-xs font-bold hover:border-[#f89728] hover:bg-orange-50/10 hover:shadow-3xs cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-[#f89728]/10 select-none active:scale-[0.98]"
+                  className="flex items-center gap-2.5 bg-white border border-slate-200/90 px-3.5 py-1.5 rounded-lg text-xs font-bold hover:border-[#f89728] hover:bg-orange-50/10 hover:shadow-3xs cursor-pointer transition-all duration-200 focus:ring-2 focus:ring-[#f89728]/10 select-none active:scale-[0.98] w-full"
                   id="header-lang-picker"
                 >
-                  <span className="scale-110">{languagesConfig[language].flag}</span>
-                  <span className="text-slate-700 hidden text-xs sm:inline-block font-sans">
+                  <img 
+                    src={languagesConfig[language].flag} 
+                    alt={languagesConfig[language].name} 
+                    className="w-5 h-3.5 object-cover rounded-xs border border-slate-200/40 shadow-2xs shadow-neutral-200"
+                    referrerPolicy="no-referrer"
+                  />
+                  <span className="text-slate-700 hidden text-xs sm:inline-block font-sans whitespace-nowrap">
                     {languagesConfig[language].name}
                   </span>
                   <span className={`text-[9px] text-slate-400 font-mono transition-transform duration-200 ${showLangMenu ? 'rotate-180 text-[#f89728]' : ''}`}>▼</span>
@@ -135,7 +112,7 @@ export default function App() {
 
                 {/* Dropdown panel */}
                 {showLangMenu && (
-                  <div className="absolute left-0 mt-2.5 w-48 bg-white border border-slate-200/60 rounded-xl shadow-premium py-1.5 z-50 text-xs text-slate-700 animate-fade-in select-none overflow-hidden">
+                  <div className="absolute left-0 right-0 mt-1 w-full bg-white border border-slate-200/60 rounded-xl shadow-premium py-1 z-50 text-xs text-slate-700 animate-fade-in select-none overflow-hidden">
                     {(Object.keys(languagesConfig) as Language[]).map((lang) => {
                       const isSelected = language === lang;
                       return (
@@ -150,7 +127,12 @@ export default function App() {
                           `}
                         >
                           <span className="flex items-center gap-2.5">
-                            <span className="scale-110">{languagesConfig[lang].flag}</span>
+                            <img 
+                              src={languagesConfig[lang].flag} 
+                              alt={languagesConfig[lang].name} 
+                              className="w-5 h-3.5 object-cover rounded-xs border border-slate-200/40 shadow-2xs"
+                              referrerPolicy="no-referrer"
+                            />
                             <span className="font-sans">{languagesConfig[lang].name}</span>
                           </span>
                           {isSelected && <span className="text-xs font-mono">✓</span>}
@@ -162,11 +144,11 @@ export default function App() {
               </div>
 
               {/* Home Key (resets password inputs or logs out) - Hidden on login screen */}
-              {(session.isLoggedIn || isCreatingAccount) && (
+              {(session.isLoggedIn || isCreatingAccount || isRecoveringPassword) && (
                 <button
                   onClick={handleLogout}
                   className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50 transition-colors hover:scale-105 cursor-pointer"
-                  title="Reset landing portal/Logout"
+                  title={t.header.resetTooltip}
                   id="header-home-button"
                 >
                   <Home size={18} />
@@ -175,8 +157,7 @@ export default function App() {
 
               {/* Info key */}
               <div
-                className="p-2 text-slate-400 rounded-lg"
-                title="Xfair System info"
+                className="p-2 text-slate-400 outline-none select-none"
                 id="header-info-button"
               >
                 <Info size={18} />
@@ -185,7 +166,7 @@ export default function App() {
               {/* Vertical Separator */}
               <span className="w-px h-5 bg-slate-200" />
 
-              {/* Sadhana Penta Profile tag (moved to the right side beside info icon) */}
+              {/* Profile tag (moved to the right side beside info icon) */}
               {session.isLoggedIn && (
                 <div className="flex items-center gap-2 bg-slate-50 pl-3 pr-1.5 py-1 rounded-full border border-slate-100 mr-1 animate-fade-in">
                   <div className="w-6 h-6 rounded-full bg-[#f89728]/10 text-[#f89728] font-bold text-xs uppercase flex items-center justify-center">
@@ -195,7 +176,7 @@ export default function App() {
                   <button
                     onClick={handleLogout}
                     className="text-slate-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-all duration-150 cursor-pointer"
-                    title="Logout session"
+                    title={t.header.logoutTooltip}
                   >
                     <LogOut size={14} />
                   </button>
@@ -209,12 +190,20 @@ export default function App() {
       {/* 3. Main Central App Module Dynamic views switcher */}
       <main className="flex-1 w-full flex items-stretch">
         {!session.isLoggedIn ? (
-          isCreatingAccount ? (
+          isRecoveringPassword ? (
+            <RecoverPasswordScreen
+              language={language}
+              onBackToLogin={() => setIsRecoveringPassword(false)}
+              onSuccessToast={(msg) => triggerToast(msg)}
+            />
+          ) : isCreatingAccount ? (
             <CreateAccountScreen
+              language={language}
               onBackToLogin={() => setIsCreatingAccount(false)}
               onSuccessDirect={() => {
                 setIsCreatingAccount(false);
-                triggerToast('Thank you for registering!');
+                const successMsg = language === 'de' ? 'Vielen Dank für Ihre Registrierung!' : 'Thank you for registering!';
+                triggerToast(successMsg);
               }}
               onSuccess={(email, firstName, lastName) => {
                 setSession({
@@ -227,9 +216,11 @@ export default function App() {
             />
           ) : (
             <LoginScreen
+              language={language}
               upcomingEvents={INITIAL_UPCOMING_EVENTS}
               onLoginSuccess={handleLogin}
               onCreateAccountRequest={() => setIsCreatingAccount(true)}
+              onRecoverPasswordRequest={() => setIsRecoveringPassword(true)}
               theme={loginTheme}
             />
           )
@@ -237,6 +228,7 @@ export default function App() {
           <div className="w-full">
             {/* Authenticated Dashboard Overview */}
             <RegistrationsScreen
+              language={language}
               userName={session.username}
               registrations={INITIAL_REGISTRATIONS}
               theme={loginTheme}
@@ -247,7 +239,7 @@ export default function App() {
       </main>
 
       {/* 4. Elegant custom branding footer */}
-      {!isWizardOpen && !isCreatingAccount && <FooterLinks />}
+      {!isWizardOpen && <FooterLinks language={language} />}
 
       {/* 5. OVERALL SYSTEM INFO MODAL */}
       {showBrandInfo && (
@@ -265,24 +257,24 @@ export default function App() {
             </div>
 
             <h3 className="text-lg font-display font-bold text-slate-900 mb-2">
-              XFAIR EMS Core Infrastructure
+              {t.header.systemInfoTitle}
             </h3>
             
             <p className="text-slate-600 text-xs leading-relaxed mb-4">
-              The Event Management System (EMS) offers corporate fair organizers a robust platform to design, dispatch, and track registries. This prototype showcases the modernized gateway interface aligning layout components with sleek styling.
+              {t.header.systemInfoDesc}
             </p>
 
             <div className="bg-slate-50 p-4 rounded-xl space-y-1.5 text-[11px] font-mono text-slate-500 border border-slate-100">
-              <p><strong>Deployment Mode:</strong> Local Caching</p>
-              <p><strong>Branded Palette:</strong> Orange (#f89728) & Slate Gray</p>
-              <p><strong>Varnish Level:</strong> High-Fidelity Modern Prototype</p>
+              <p><strong>{t.header.depMode}</strong> {t.header.depModeValue}</p>
+              <p><strong>{t.header.brandPalette}</strong> {t.header.brandPaletteValue}</p>
+              <p><strong>{t.header.varnishLevel}</strong> {t.header.varnishLevelValue}</p>
             </div>
 
             <button
               onClick={() => setShowBrandInfo(false)}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold py-2.5 rounded-lg mt-5 cursor-pointer"
+              className="w-full bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold py-2.5 rounded-lg mt-5 cursor-pointer"
             >
-              Acknowledge Settings
+              {t.header.acknowledgedBtn}
             </button>
           </div>
         </div>
