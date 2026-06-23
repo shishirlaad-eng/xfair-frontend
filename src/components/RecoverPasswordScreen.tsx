@@ -7,29 +7,30 @@ interface RecoverPasswordScreenProps {
   language: Language;
   onBackToLogin: () => void;
   onSuccessToast?: (msg: string) => void;
+  onProceedToPasswordReset: () => void;
 }
 
-export function RecoverPasswordScreen({ language, onBackToLogin, onSuccessToast }: RecoverPasswordScreenProps) {
-  const [email, setEmail] = useState('demo@xfair.com');
+export function RecoverPasswordScreen({ language, onBackToLogin, onSuccessToast, onProceedToPasswordReset }: RecoverPasswordScreenProps) {
+  const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorType, setErrorType] = useState<'empty' | 'invalid' | ''>('');
 
   const t = TRANSLATIONS[language];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setErrorMsg(t.recover.errorEmailRequired);
+    if (!email.trim()) {
+      setErrorType('empty');
       return;
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
-      setErrorMsg(t.recover.errorEmailInvalid);
+      setErrorType('invalid');
       return;
     }
 
     setIsSubmitting(true);
-    setErrorMsg('');
+    setErrorType('');
 
     setTimeout(() => {
       setIsSubmitting(false);
@@ -76,24 +77,55 @@ export function RecoverPasswordScreen({ language, onBackToLogin, onSuccessToast 
         <div className="flex-1 p-6 sm:p-10 flex flex-col justify-center text-left">
           {isSubmitted ? (
             /* Password Recovery Confirmation Success State */
-            <div id="recover-success-state" className="flex flex-col items-center justify-center text-center py-12 px-2 space-y-6 animate-fade-in">
+            <div id="recover-success-state" className="flex flex-col items-center justify-center text-center py-12 px-2 space-y-6 animate-fade-in animate-duration-300">
               <div className="w-14 h-14 bg-orange-50 text-[#f89728] border border-orange-100 rounded-full flex items-center justify-center animate-pulse">
                 <Mail size={26} />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-1.5 flex flex-col items-center">
                 <h3 className="text-lg font-bold text-slate-900 font-sans">
                   {t.recover.successTitle}
                 </h3>
-                <p className="text-slate-500 text-xs max-w-sm leading-relaxed font-sans font-medium mb-1">
+                <p className="text-slate-500 text-xs max-w-sm leading-relaxed font-sans font-medium mb-4">
                   {t.recover.successSentText} <span className="font-mono text-[#f89728] font-bold">{email}</span>. {t.recover.successInstructionsText}
                 </p>
+                
+                <button
+                  type="button"
+                  onClick={onProceedToPasswordReset}
+                  className="px-6 py-2 border border-[#f89728] text-[#f89728] hover:bg-orange-50/40 rounded-lg text-xs font-bold transition-all cursor-pointer select-none"
+                >
+                  Proceed to password reset
+                </button>
               </div>
             </div>
           ) : (
             /* Reset password request form */
             <div className="w-full max-w-md mx-auto py-2">
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} noValidate className="space-y-5">
                 
+                {/* Specific correct entries notification matching original layout precisely */}
+                {errorType && (
+                  <div 
+                    id="recover-error-banner" 
+                    className="bg-[#FFF5F5] border border-red-200 border-l-[6px] border-l-red-600 rounded-lg p-4 mb-5 text-[#B91C1C] text-xs font-sans animate-fade-in"
+                  >
+                    <p className="font-bold text-[13px] text-red-900 mb-1">
+                      {language === 'de' ? 'Bitte korrigieren Sie Ihre Angaben' : 'Please correct your entries'}
+                    </p>
+                    <ul className="list-disc list-inside space-y-0.5 text-xs font-medium text-red-700 ml-1">
+                      <li>
+                        {errorType === 'empty' 
+                          ? (language === 'de' 
+                              ? 'Bitte geben Sie Ihre E-Mail-Adresse ein! Der Wiederherstellungslink wird Ihnen zugesandt.' 
+                              : 'Please enter your email address! The recovery link will be sent to you.')
+                          : (language === 'de' 
+                              ? 'Bitte geben Sie eine gültige E-Mail-Adresse ein.' 
+                              : 'Please enter a valid email address.')}
+                      </li>
+                    </ul>
+                  </div>
+                )}
+
                 <div className="space-y-1.5 group relative">
                   <label className="block text-[#4A5D7E] text-[12px] font-bold tracking-wide">
                     {t.recover.emailLabel} <span className="text-red-500">*</span>
@@ -104,14 +136,14 @@ export function RecoverPasswordScreen({ language, onBackToLogin, onSuccessToast 
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
-                      if (errorMsg) setErrorMsg('');
+                      if (errorType) setErrorType('');
                     }}
-                    required
-                    className="w-full bg-white border border-zinc-200 rounded-lg px-3.5 py-2.5 text-sm hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10 text-zinc-900 font-semibold outline-none transition-all h-11"
+                    className={`w-full rounded-lg px-3.5 py-2.5 text-sm font-semibold outline-none transition-all h-11 ${
+                      errorType 
+                        ? 'bg-red-50/50 border border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-100/50 text-red-900 placeholder-red-300' 
+                        : 'bg-white border border-zinc-200 text-zinc-900 hover:border-[#f89728]/60 focus:border-[#f89728] focus:ring-2 focus:ring-[#f89728]/10'
+                    }`}
                   />
-                  {errorMsg && (
-                    <p className="text-[11px] font-semibold text-rose-500 mt-1 font-sans">{errorMsg}</p>
-                  )}
                 </div>
 
                 {/* Action Navigation Controls Row - matching CreateAccountScreen design exactly with tighter margin */}

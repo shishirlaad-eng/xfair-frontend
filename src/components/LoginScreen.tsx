@@ -154,7 +154,7 @@ export function LoginScreen({ language, upcomingEvents, onLoginSuccess, onCreate
             <form onSubmit={handleSubmit} className="mt-8 mb-4 space-y-5.5 relative z-10">
               <div>
                 <label htmlFor="login-email-input" className="block text-xs font-semibold text-[#8C9BB0] mb-2 font-sans">
-                  {t.login.emailLabel}
+                  {t.login.emailLabel} <span className="text-red-500 font-bold">*</span>
                 </label>
                 <input
                   id="login-email-input"
@@ -170,7 +170,7 @@ export function LoginScreen({ language, upcomingEvents, onLoginSuccess, onCreate
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label htmlFor="login-password-input" className="block text-xs font-semibold text-[#8C9BB0] font-sans">
-                    {t.login.passwordLabel}
+                    {t.login.passwordLabel} <span className="text-red-500 font-bold">*</span>
                   </label>
                   <button
                     type="button"

@@ -73,6 +73,7 @@ interface RegistrationsScreenProps {
   registrations: Registration[];
   theme?: 'option1' | 'option2';
   onWizardOpenChange?: (isOpen: boolean) => void;
+  isWizardOpen?: boolean;
 }
 
 export function RegistrationsScreen({
@@ -80,7 +81,8 @@ export function RegistrationsScreen({
   userName,
   registrations,
   theme,
-  onWizardOpenChange
+  onWizardOpenChange,
+  isWizardOpen
 }: RegistrationsScreenProps) {
   const [localRegs, setLocalRegs] = useState<Registration[]>(registrations);
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
@@ -88,6 +90,15 @@ export function RegistrationsScreen({
   const [forceWizardMode, setForceWizardMode] = useState(false);
 
   const t = TRANSLATIONS[language];
+
+  // Reset inner wizard mode and selected registration when header home or logo click sets isWizardOpen to false
+  useEffect(() => {
+    if (isWizardOpen === false) {
+      setShowFlowPreview(false);
+      setSelectedReg(null);
+      setForceWizardMode(false);
+    }
+  }, [isWizardOpen]);
 
   // Sync state for popup integration
   useEffect(() => {

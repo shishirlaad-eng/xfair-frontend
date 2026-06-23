@@ -9,7 +9,7 @@ export function BackgroundOverlay({ theme = 'option1' }: BackgroundOverlayProps)
     <div id="background-elements" className="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none bg-[#0A0F1D]">
       {/* Premium Event / Trade Show Background Image always present */}
       <img
-        src="/exhibition_executives_1781071241876.png"
+        src="/src/assets/images/exhibition_executives_1781071241876.png"
         alt="Event Venue Backdrop"
         referrerPolicy="no-referrer"
         className="absolute inset-0 w-full h-full object-cover object-center scale-100 opacity-90 transition-all duration-700"
